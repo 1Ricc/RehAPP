@@ -1,0 +1,5 @@
+# DESIGN
+- [] implementare hompage discord
+- 
+
+
