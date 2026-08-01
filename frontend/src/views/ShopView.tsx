@@ -59,8 +59,8 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, fontWeight: 700, color: '#C9A227' }}>
           <svg width="15" height="15" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9" fill="none" stroke="#C9A227" strokeWidth="2" />
-            <path d="M12 7v5l3.5 2" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round" />
+            <path d="M6 3h12l4 6-10 13L2 9Z" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M2 9h20M11 3 8 9l4 13 4-13-3-6" fill="none" stroke="#C9A227" strokeWidth="1.5" strokeLinejoin="round" />
           </svg>
           {gems} gems
         </div>
@@ -151,13 +151,15 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
                 const canAfford = item.acquistabile;
                 const isBuying = buying === item.id;
                 const isLocked = !item.sbloccato;
+                const isRedeemed = !item.ripetibile && item.volteRiscattata > 0;
+                const grayedOut = isLocked || isRedeemed;
 
                 return (
                   <div
                     key={item.id}
                     style={{
-                      background: isLocked ? '#F8F9F6' : '#EAF4FC',
-                      border: `1px solid ${isLocked ? '#EEF0EA' : '#C7E3F5'}`,
+                      background: grayedOut ? '#F8F9F6' : '#EAF4FC',
+                      border: `1px solid ${grayedOut ? '#EEF0EA' : '#C7E3F5'}`,
                       borderRadius: 20,
                       padding: 16,
                       display: 'flex',
@@ -175,40 +177,42 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
                       flexShrink: 0,
                     }}>
                       <svg width="18" height="18" viewBox="0 0 24 24">
-                        <rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke={isLocked ? '#B3BAA9' : '#1D74B8'} strokeWidth="2" />
-                        <path d="M3 10h18M8 6v4M16 6v4" fill="none" stroke={isLocked ? '#B3BAA9' : '#1D74B8'} strokeWidth="2" />
+                        <rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke={grayedOut ? '#B3BAA9' : '#1D74B8'} strokeWidth="2" />
+                        <path d="M3 10h18M8 6v4M16 6v4" fill="none" stroke={grayedOut ? '#B3BAA9' : '#1D74B8'} strokeWidth="2" />
                       </svg>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#21281F' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: grayedOut ? '#8A9485' : '#21281F' }}>
                         {item.nome}
                       </div>
                       <div style={{ fontSize: 12.5, color: '#6B7566', marginTop: 2 }}>
                         {item.partner} · {item.descrizione}
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: isLocked ? '#8A9485' : '#1D74B8', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: grayedOut ? '#8A9485' : '#1D74B8', marginTop: 4 }}>
                         {isLocked
                           ? `Unlocks at phase ${item.faseRichiesta}`
+                          : isRedeemed
+                          ? 'Already redeemed'
                           : `${item.costo} gems${item.gemmeMancanti > 0 ? ` · need ${item.gemmeMancanti} more` : ''}`}
                       </div>
                     </div>
                     <button
-                      onClick={() => !isLocked && canAfford && handleRedeem(item)}
-                      disabled={isLocked || !canAfford || isBuying}
+                      onClick={() => !isLocked && !isRedeemed && canAfford && handleRedeem(item)}
+                      disabled={isLocked || isRedeemed || !canAfford || isBuying}
                       style={{
                         flexShrink: 0,
-                        background: !isLocked && canAfford ? '#4FA8E8' : '#FFFFFF',
-                        color: isLocked ? '#8A9485' : (!canAfford ? '#B3BAA9' : '#21281F'),
-                        border: !isLocked && canAfford ? 'none' : '1px solid #E1E4DD',
+                        background: !grayedOut && canAfford ? '#4FA8E8' : '#FFFFFF',
+                        color: grayedOut ? '#8A9485' : (!canAfford ? '#B3BAA9' : '#21281F'),
+                        border: !grayedOut && canAfford ? 'none' : '1px solid #E1E4DD',
                         borderRadius: 12,
                         padding: '10px 14px',
                         fontSize: 12,
                         fontWeight: 700,
-                        cursor: canAfford && !isLocked ? 'pointer' : 'default',
-                        opacity: isLocked ? 0.6 : 1,
+                        cursor: canAfford && !grayedOut ? 'pointer' : 'default',
+                        opacity: grayedOut ? 0.6 : 1,
                       }}
                     >
-                      {isBuying ? '…' : isLocked ? 'Locked' : canAfford ? 'Redeem' : 'Not enough'}
+                      {isBuying ? '…' : isLocked ? 'Locked' : isRedeemed ? 'Redeemed' : canAfford ? 'Redeem' : 'Not enough'}
                     </button>
                   </div>
                 );

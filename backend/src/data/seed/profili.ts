@@ -18,7 +18,7 @@ import { aggiungiGiorni, giornataLogica } from '../../domain/tempo.js';
 import type { DataISO, DatiPersistiti, StatoUtente } from '../../domain/types.js';
 import { creaPianoMarco } from './piano-marco.js';
 
-export type NomeProfilo = 'nuovo' | 'avanzato' | 'soglia' | 'vetrina' | 'settimana';
+export type NomeProfilo = 'nuovo' | 'avanzato' | 'soglia' | 'vetrina' | 'settimana' | 'presentazione';
 
 export const PROFILI: Record<NomeProfilo, string> = {
   nuovo: 'Primo accesso: giorno 1, tutto a zero',
@@ -26,6 +26,7 @@ export const PROFILI: Record<NomeProfilo, string> = {
   soglia: 'A una giornata dal level-up, per far accadere il momento clou a comando',
   vetrina: 'Fase 3 raggiunta: entrambi i benefit sbloccati, streak lungo, per presentazioni',
   settimana: 'Giorno 8, i primi 7 giorni pieni: stessi numeri del fixture, ma con storico vero',
+  presentazione: 'A una giornata dal level-up in fase 3: per mostrare lo sblocco del calendario dal vivo',
 };
 
 /** What the user did on a simulated day. */
@@ -150,5 +151,18 @@ export function creaProfilo(nome: NomeProfilo, adesso: Date = new Date()): DatiP
      */
     case 'settimana':
       return simula(7, () => 'pieno', doloreRealistico, adesso);
+
+    /**
+     * Thirty-nine full days. Phase one closes on schedule and phase two is
+     * left exactly 22 RP short of its threshold — one full day's worth
+     * (16 + 4 + 2, phase two still has the drug block) — so finishing today's
+     * checklist and confirming the level-up crosses into phase three live.
+     * `grafico-dolore` is already unlocked (phase >= 2); `calendario-heatmap`
+     * (phase >= 3) is the one that unlocks on stage. Streak 34, x2.65, ~1427
+     * gems — comfortably enough to redeem any reward in the catalogue,
+     * including the phase-3-gated one, right after the level-up.
+     */
+    case 'presentazione':
+      return simula(39, () => 'pieno', doloreRealistico, adesso);
   }
 }

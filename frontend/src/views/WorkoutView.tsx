@@ -162,6 +162,8 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
     const isMeds = block.id === 'farmaci';
     const isDiary = block.id === 'diario';
     const dimmed = !block.richiestoOggi;
+    // The day is locked once finalised — nothing here should still be clickable.
+    const locked = dimmed || oggi.finalizzato;
 
     return (
       <div key={block.id} style={CARD}>
@@ -201,19 +203,19 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
                     padding: 12,
                     borderRadius: 16,
                     background: checked ? 'rgba(59,171,110,0.07)' : '#FAFBF8',
-                    opacity: dimmed ? 0.55 : 1,
+                    opacity: locked ? 0.55 : 1,
                     transition: 'background 0.25s ease',
                   }}
                 >
                   {/* Checkbox — one click = done, click again = undo */}
                   <button
-                    onClick={() => !dimmed && handleToggle(
+                    onClick={() => !locked && handleToggle(
                       isExercises ? 'esercizi' : 'farmaci',
                       v.id,
                       !checked,
                       maxSets,
                     )}
-                    disabled={busy || dimmed}
+                    disabled={busy || locked}
                     style={{
                       flexShrink: 0,
                       width: 26,
@@ -224,7 +226,7 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: dimmed ? 'default' : 'pointer',
+                      cursor: locked ? 'default' : 'pointer',
                       marginTop: 2,
                       transition: 'all 0.2s ease',
                     }}
@@ -251,7 +253,7 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
                         <button
                           onClick={() => setSetsMap(prev => ({ ...prev, [v.id]: Math.max((prev[v.id] ?? 0) - 1, 0) }))}
-                          disabled={dimmed || setsDone <= 0}
+                          disabled={locked || setsDone <= 0}
                           style={{
                             width: 28, height: 28, borderRadius: 8,
                             border: '1.5px solid #D8DCD1', background: '#FFFFFF',
@@ -264,7 +266,7 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
                         </div>
                         <button
                           onClick={() => setSetsMap(prev => ({ ...prev, [v.id]: Math.min((prev[v.id] ?? 0) + 1, maxSets) }))}
-                          disabled={dimmed || setsDone >= maxSets}
+                          disabled={locked || setsDone >= maxSets}
                           style={{
                             width: 28, height: 28, borderRadius: 8,
                             border: '1.5px solid #D8DCD1', background: '#FFFFFF',
@@ -283,7 +285,8 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
 
         {isDiary && (
           <button
-            onClick={() => setVasOpen(true)}
+            onClick={() => !locked && setVasOpen(true)}
+            disabled={locked}
             style={{
               width: '100%',
               display: 'flex',
@@ -293,7 +296,8 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
               borderRadius: 16,
               background: block.completo ? 'rgba(59,171,110,0.07)' : '#FAFBF8',
               border: 'none',
-              cursor: 'pointer',
+              opacity: locked ? 0.55 : 1,
+              cursor: locked ? 'default' : 'pointer',
               textAlign: 'left',
               transition: 'background 0.25s ease',
             }}

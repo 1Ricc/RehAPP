@@ -6,6 +6,7 @@ import Heatmap from '../components/Heatmap';
 
 interface Props {
   stato: RispostaStato;
+  onLogout: () => void;
 }
 
 type Timeframe = 'week' | 'month' | '3m' | '6m' | 'year';
@@ -46,7 +47,7 @@ function daysSince(iso: string): number {
   return Math.floor((Date.now() - start) / 86_400_000);
 }
 
-export default function ProfileView({ stato }: Props) {
+export default function ProfileView({ stato, onLogout }: Props) {
   const { profilo, barra, benefit, fase, paziente } = stato;
 
   const [history, setHistory] = useState<RispostaStorico | null>(null);
@@ -417,6 +418,23 @@ export default function ProfileView({ stato }: Props) {
             </div>
           </div>
         )}
+
+        <button
+          onClick={onLogout}
+          style={{
+            width: '100%',
+            background: '#FFFFFF',
+            border: '1px solid #EEF0EA',
+            borderRadius: 14,
+            padding: '14px',
+            fontSize: 14,
+            fontWeight: 700,
+            color: '#8A9485',
+            cursor: 'pointer',
+          }}
+        >
+          Log out
+        </button>
 
       </div>
     </>

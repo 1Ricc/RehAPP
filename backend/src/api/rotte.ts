@@ -101,6 +101,9 @@ rotte.post(
 
     return componiStato(
       await aggiorna((dati) => {
+        if (dati.giornoCorrente.finalizzato) {
+          throw nonPossibile('La giornata è già stata chiusa: la checklist di oggi non si tocca più.');
+        }
         const fase = faseCorrente(dati);
         const valide =
           blocco === 'esercizi'
@@ -143,6 +146,9 @@ rotte.post(
 
     return componiStato(
       await aggiorna((dati) => {
+        if (dati.giornoCorrente.finalizzato) {
+          throw nonPossibile('La giornata è già stata chiusa: il diario di oggi non si tocca più.');
+        }
         const diario: Diario = {
           vas,
           ...(nota ? { nota } : {}),
@@ -172,6 +178,9 @@ rotte.post(
 
     return componiStato(
       await aggiorna((dati) => {
+        if (dati.giornoCorrente.finalizzato) {
+          throw nonPossibile('La giornata è già stata chiusa.');
+        }
         if (dati.stato.recuperiManualiUsatiInFase >= RECUPERI_MANUALI_PER_FASE) {
           throw nonPossibile(
             'Hai già usato il recupero libero di questa fase. Se il ginocchio fa male, segna il dolore nel diario: da ' +

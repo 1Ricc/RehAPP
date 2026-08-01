@@ -23,13 +23,18 @@ export default function App() {
 
   const updateStato = (s: RispostaStato) => setStato(s);
 
+  const handleLogout = () => {
+    setStato(null);
+    setView('login');
+  };
+
   const content = () => {
     if (view === 'login') return <LoginView onLogin={handleLogin} />;
     if (!stato) return null;
     switch (view) {
       case 'main':    return <HomeView stato={stato} onStateUpdate={updateStato} onNavigate={setView} />;
       case 'workout': return <WorkoutView stato={stato} onStateUpdate={updateStato} />;
-      case 'profile': return <ProfileView stato={stato} />;
+      case 'profile': return <ProfileView stato={stato} onLogout={handleLogout} />;
       case 'shop':    return <ShopView stato={stato} onStateUpdate={updateStato} />;
       case 'create':  return <CreatePlanView onBack={() => setView('main')} />;
       default:        return null;

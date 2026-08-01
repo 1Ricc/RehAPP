@@ -59,6 +59,9 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
   const { profilo, barra, fase, oggi, allerta } = stato;
   const [advancing, setAdvancing] = useState(false);
   const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
+  // Holds the newly-reached phase number while the badge celebration shows.
+  const [badgeUnlock, setBadgeUnlock] = useState<number | null>(null);
+  const [badgeIn, setBadgeIn] = useState(false);
 
   useEffect(() => {
     // A manual day-close appends today to `storico` while `oggi.data` stays
@@ -85,12 +88,23 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
   const handleAdvance = async () => {
     setAdvancing(true);
     try {
-      onStateUpdate(await advancePhase());
+      const next = await advancePhase();
+      onStateUpdate(next);
+      // "Phase Cleared" is earned the moment a phase closes — celebrate it
+      // right here, where the presenter's own click triggers it live.
+      setBadgeIn(false);
+      setBadgeUnlock(next.fase.numero);
+      setTimeout(() => setBadgeIn(true), 10);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error');
     } finally {
       setAdvancing(false);
     }
+  };
+
+  const dismissBadge = () => {
+    setBadgeIn(false);
+    setTimeout(() => setBadgeUnlock(null), 300);
   };
 
   return (
@@ -323,6 +337,51 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
         >
           Start your routine →
         </button>
+      )}
+
+      {/* Badge-unlocked celebration, shown right after confirming a level-up */}
+      {badgeUnlock !== null && (
+        <div
+          onClick={dismissBadge}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 150,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: `rgba(0,0,0,${badgeIn ? 0.45 : 0})`,
+            backdropFilter: badgeIn ? 'blur(6px)' : 'none',
+            WebkitBackdropFilter: badgeIn ? 'blur(6px)' : 'none',
+            transition: 'background 0.35s ease, backdrop-filter 0.35s ease',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: 28,
+            padding: '36px 28px 28px',
+            width: 'calc(100% - 48px)',
+            maxWidth: 340,
+            textAlign: 'center',
+            transform: `scale(${badgeIn ? 1 : 0.82})`,
+            opacity: badgeIn ? 1 : 0,
+            transition: 'transform 0.42s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease',
+            boxShadow: '0 24px 48px rgba(0,0,0,0.18)',
+          }}>
+            <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 16 }}>🏆</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#1D74B8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>
+              Badge unlocked
+            </div>
+            <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: 22, fontWeight: 700, color: '#21281F', marginBottom: 8 }}>
+              Phase Cleared
+            </div>
+            <div style={{ fontSize: 15, color: '#6B7566', fontWeight: 600, marginBottom: 24 }}>
+              You completed a phase of the clinical path — welcome to phase {badgeUnlock}.
+            </div>
+            <div style={{ fontSize: 12, color: '#B3BAA9' }}>Tap anywhere to close</div>
+          </div>
+        </div>
       )}
 
     </div>
