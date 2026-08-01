@@ -8,7 +8,8 @@ import { networkInterfaces } from 'node:os';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 
-import { rotteStato } from './api/state.js';
+import { ErroreApi } from './api/errori.js';
+import { rotte } from './api/rotte.js';
 import { load, percorsoStato } from './data/store.js';
 import type { RispostaErrore } from './domain/types.js';
 
@@ -25,7 +26,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
-app.use('/api', rotteStato);
+app.use('/api', rotte);
 
 app.use((_req, res) => {
   const errore: RispostaErrore = {
@@ -37,10 +38,16 @@ app.use((_req, res) => {
 
 // Readable errors, never a stack trace on the wire.
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof ErroreApi) {
+    const errore: RispostaErrore = { errore: err.codice, messaggio: err.message };
+    res.status(err.stato).json(errore);
+    return;
+  }
+  // Anything else is a bug: it goes to the console in full, to the client short.
   console.error('[api]', err);
   const errore: RispostaErrore = {
     errore: 'errore-interno',
-    messaggio: err instanceof Error ? err.message : 'Qualcosa è andato storto lato server.',
+    messaggio: 'Qualcosa è andato storto lato server.',
   };
   res.status(500).json(errore);
 });

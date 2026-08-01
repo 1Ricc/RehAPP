@@ -1,17 +1,14 @@
 /**
- * GET /api/state — everything the home needs, in one call.
+ * Shapes the persisted state into what the screens read.
  *
  * This module only shapes: every judgement (what kind of day it is, what the
  * checklist is worth) comes from `domain/scoring.ts`, so the screen and the
- * engine can never disagree.
+ * engine can never disagree. Gems leave from here floored, always.
  */
-
-import { Router } from 'express';
 
 import { RP_DIARIO, RP_ESERCIZI, RP_FARMACI } from '../domain/costanti.js';
 import { classificaGiorno, faseCorrente, livelloAllerta, rpDelGiorno } from '../domain/scoring.js';
 import { aggiungiGiorni } from '../domain/tempo.js';
-import { load } from '../data/store.js';
 import type {
   Allerta,
   BarraStato,
@@ -21,18 +18,9 @@ import type {
   Fase,
   GiornoInCorso,
   RispostaStato,
+  RispostaStorico,
   TipoGiorno,
 } from '../domain/types.js';
-
-export const rotteStato = Router();
-
-rotteStato.get('/state', async (_req, res, next) => {
-  try {
-    res.json(componiStato(await load()));
-  } catch (errore) {
-    next(errore);
-  }
-});
 
 export function componiStato(dati: DatiPersistiti): RispostaStato {
   const { piano, stato, giornoCorrente } = dati;
@@ -173,6 +161,19 @@ function componiAllerta(giorniVasAlti: number): Allerta {
       'Una settimana così non è una pausa. Vale la pena rivedere il piano con il fisioterapista.',
   };
   return { livello, messaggio: messaggi[livello] };
+}
+
+/**
+ * The last `giorni` closed days, oldest first — the order the calendar and the
+ * chart draw in. Gems are floored here too, so no screen ever shows a decimal.
+ */
+export function componiStorico(dati: DatiPersistiti, giorni: number): RispostaStorico {
+  return {
+    giorni: dati.storico.slice(-giorni).map((g) => ({
+      ...g,
+      gemmeGuadagnate: Math.floor(g.gemmeGuadagnate),
+    })),
+  };
 }
 
 function somma(valori: number[]): number {

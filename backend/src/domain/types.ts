@@ -318,6 +318,14 @@ export interface RispostaStato {
   allerta: Allerta;
 }
 
+/**
+ * GET /api/history — calendar and pain chart. Kept out of /api/state so the
+ * home stays at 2-3 KB and is only paid for when those tabs open.
+ */
+export interface RispostaStorico {
+  giorni: GiornoStorico[];
+}
+
 /** Every error, every route. Never a stack trace. */
 export interface RispostaErrore {
   errore: string;
