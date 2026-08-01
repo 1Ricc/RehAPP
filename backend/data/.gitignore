@@ -1,0 +1,7 @@
+# SQLite WAL files — managed by SQLite, never commit these
+state.db-shm
+state.db-wal
+
+# Migration backup from file-based storage
+*.migrated.bak
+*.bak
