@@ -54,6 +54,7 @@ function vuoto(dataInizio: DataISO): DatiPersistiti {
     stato: { ...STATO_ZERO, sogliaFaseAttuale: fase1.sogliaRp },
     giornoCorrente: nuovoGiorno(dataInizio),
     storico: [],
+    voucher: [],
   };
 }
 

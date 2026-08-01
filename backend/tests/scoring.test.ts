@@ -22,6 +22,13 @@ import {
 } from '../src/domain/benefit.js';
 import { RP_DIARIO, RP_ESERCIZI, RP_FARMACI, VERSIONE_STATO } from '../src/domain/costanti.js';
 import {
+  ErroreNegozio,
+  catalogo,
+  generaCodice,
+  prossimaRicompensa,
+  riscatta,
+} from '../src/domain/negozio.js';
+import {
   avanzaFase,
   chiudiGiornata,
   classificaGiorno,
@@ -54,6 +61,7 @@ function statoVuoto(conRiposi = false): DatiPersistiti {
     versione: VERSIONE_STATO,
     piano,
     storico: [],
+    voucher: [],
     giornoCorrente: nuovoGiorno(INIZIO),
     stato: {
       faseRaggiunta: 1,
@@ -389,6 +397,68 @@ describe('benefit in-app e badge', () => {
   it('propone come prossimo quello più vicino', () => {
     const elenco = badge(giorniPieni(statoVuoto(), 10));
     expect(prossimoBadge(elenco)?.id).toBe('diario-14');
+  });
+});
+
+describe('negozio e voucher', () => {
+  const adesso = new Date('2026-08-01T12:00:00');
+  const conGemme = (gemme: number, fase = 1): DatiPersistiti => {
+    const d = statoVuoto();
+    return { ...d, stato: { ...d.stato, gemmePortafoglio: gemme, faseRaggiunta: fase } };
+  };
+
+  it('il codice ha il formato REHAPP-XXXX-XXXX, senza caratteri ambigui', () => {
+    const codice = generaCodice();
+    expect(codice).toMatch(/^REHAPP-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+  });
+
+  it('confronta le gemme arrotondate per difetto, come la barra in alto', () => {
+    // 199.6 in cassa: la barra mostra 199, quindi il buono da 200 non si compra.
+    const quasi = catalogo(conGemme(199.6)).find((r) => r.id === 'farmacia-10')!;
+    expect(quasi.acquistabile).toBe(false);
+    expect(quasi.gemmeMancanti).toBe(1);
+    expect(catalogo(conGemme(200)).find((r) => r.id === 'farmacia-10')!.acquistabile).toBe(true);
+  });
+
+  it('non offre quello che la fase non ha ancora sbloccato', () => {
+    const inFase1 = catalogo(conGemme(5000, 1)).find((r) => r.id === 'fitlab-10e')!;
+    expect(inFase1.sbloccato).toBe(false);
+    expect(inFase1.acquistabile).toBe(false);
+    expect(catalogo(conGemme(5000, 3)).find((r) => r.id === 'fitlab-10e')!.acquistabile).toBe(true);
+  });
+
+  it('scala le gemme ed emette il voucher', () => {
+    const dopo = riscatta(conGemme(300), 'farmacia-10', adesso);
+    expect(dopo.stato.gemmePortafoglio).toBe(100);
+    expect(dopo.voucher).toHaveLength(1);
+    expect(dopo.voucher[0]!.gemmeSpese).toBe(200);
+    expect(dopo.voucher[0]!.partner).toBe('Farmacia Centrale');
+  });
+
+  it('una ricompensa non ripetibile si prende una volta sola', () => {
+    const dopo = riscatta(conGemme(500), 'farmacia-10', adesso);
+    expect(() => riscatta(dopo, 'farmacia-10', adesso)).toThrow(ErroreNegozio);
+  });
+
+  it('il pozzo ripetibile costa 50 in più a ogni riacquisto', () => {
+    let d = conGemme(2000);
+    const costi: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      costi.push(catalogo(d).find((r) => r.id === 'farmacia-5-ripetibile')!.costo);
+      d = riscatta(d, 'farmacia-5-ripetibile', adesso);
+    }
+    expect(costi).toEqual([150, 200, 250, 300]);
+    expect(d.stato.gemmePortafoglio).toBe(2000 - 900);
+    expect(d.voucher).toHaveLength(4);
+  });
+
+  it('rifiuta con un messaggio che dice quante gemme mancano', () => {
+    expect(() => riscatta(conGemme(50), 'farmacia-10', adesso)).toThrow(/mancano 150 gemme/i);
+  });
+
+  it('propone come prossima la più vicina fra quelle sbloccate', () => {
+    const elenco = catalogo(conGemme(100));
+    expect(prossimaRicompensa(elenco)?.id).toBe('farmacia-5-ripetibile');
   });
 });
 

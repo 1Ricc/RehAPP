@@ -232,6 +232,23 @@ export interface DatiPersistiti {
   stato: StatoUtente;
   giornoCorrente: GiornoCorrente;
   storico: GiornoStorico[];
+  voucher: Voucher[];
+}
+
+/**
+ * A redeemed reward. Mock by design, as the brief allows: the code is generated
+ * and nothing is ever sent anywhere. It is stored, not derived, because it
+ * records an event — unlike a badge, which restates a fact.
+ */
+export interface Voucher {
+  id: string;
+  ricompensaId: string;
+  nome: string;
+  partner: string;
+  /** `REHAPP-7K2M-9XQ4`. */
+  codice: string;
+  gemmeSpese: number;
+  riscattatoIl: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -322,6 +339,8 @@ export interface RispostaStato {
   benefit: BenefitInApp[];
   /** The next one to unlock, for the home teaser. Null when they are all open. */
   prossimoBenefit: BenefitInApp | null;
+  /** The nearest reward still out of reach: the "177/200" on the home. */
+  prossimaRicompensa: Ricompensa | null;
 }
 
 /**
@@ -357,6 +376,40 @@ export interface RispostaBadge {
   badge: Badge[];
   /** The closest one still missing, or null once they are all earned. */
   prossimo: Badge | null;
+}
+
+/** A store item with everything already decided server-side. */
+export interface Ricompensa {
+  id: string;
+  nome: string;
+  partner: string;
+  descrizione: string;
+  /** What it costs right now: it grows for the repeatable one. */
+  costo: number;
+  costoBase: number;
+  faseRichiesta: number;
+  /** The phase gate is met. */
+  sbloccato: boolean;
+  /** Unlocked *and* affordable: the buy button reads this and nothing else. */
+  acquistabile: boolean;
+  ripetibile: boolean;
+  volteRiscattata: number;
+  /** Zero when affordable. Drives the "177/200" progress on the home. */
+  gemmeMancanti: number;
+}
+
+/** GET /api/store */
+export interface RispostaNegozio {
+  /** Floored, same as everywhere else. */
+  gemme: number;
+  ricompense: Ricompensa[];
+  /** The nearest one still out of reach, for the home teaser. */
+  prossima: Ricompensa | null;
+}
+
+/** GET /api/vouchers — newest first. */
+export interface RispostaVoucher {
+  voucher: Voucher[];
 }
 
 /** Every error, every route. Never a stack trace. */

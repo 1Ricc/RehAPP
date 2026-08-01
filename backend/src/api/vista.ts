@@ -14,6 +14,7 @@ import {
   prossimoBenefit,
 } from '../domain/benefit.js';
 import { RP_DIARIO, RP_ESERCIZI, RP_FARMACI } from '../domain/costanti.js';
+import { catalogo, prossimaRicompensa } from '../domain/negozio.js';
 import { classificaGiorno, faseCorrente, livelloAllerta, rpDelGiorno } from '../domain/scoring.js';
 import { aggiungiGiorni } from '../domain/tempo.js';
 import type {
@@ -25,8 +26,10 @@ import type {
   Fase,
   GiornoInCorso,
   RispostaBadge,
+  RispostaNegozio,
   RispostaStato,
   RispostaStorico,
+  RispostaVoucher,
   TipoGiorno,
 } from '../domain/types.js';
 
@@ -92,6 +95,8 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
     allerta: componiAllerta(stato.giorniVasAltiConsecutivi),
     benefit: benefitInApp(stato.faseRaggiunta),
     prossimoBenefit: prossimoBenefit(stato.faseRaggiunta),
+    // The other half of the home teaser: "177/200 per il buono farmacia".
+    prossimaRicompensa: prossimaRicompensa(catalogo(dati)),
   };
 }
 
@@ -99,6 +104,21 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
 export function componiBadge(dati: DatiPersistiti): RispostaBadge {
   const elenco = badge(dati);
   return { badge: elenco, prossimo: prossimoBadge(elenco) };
+}
+
+/** GET /api/store — the frontend reads `acquistabile` and nothing else. */
+export function componiNegozio(dati: DatiPersistiti): RispostaNegozio {
+  const ricompense = catalogo(dati);
+  return {
+    gemme: Math.floor(dati.stato.gemmePortafoglio),
+    ricompense,
+    prossima: prossimaRicompensa(ricompense),
+  };
+}
+
+/** GET /api/vouchers — newest first, which is the order they are looked at. */
+export function componiVoucher(dati: DatiPersistiti): RispostaVoucher {
+  return { voucher: [...dati.voucher].reverse() };
 }
 
 function componiBlocchi(

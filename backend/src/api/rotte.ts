@@ -12,12 +12,19 @@
 
 import { Router, type NextFunction, type Request, type Response } from 'express';
 
+import { ErroreNegozio, riscatta } from '../domain/negozio.js';
 import { avanzaFase, faseCorrente } from '../domain/scoring.js';
 import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costanti.js';
-import type { Diario, IdBlocco } from '../domain/types.js';
+import type { Diario, IdBlocco, Voucher } from '../domain/types.js';
 import { nonAncoraPronto, nonPossibile, richiestaNonValida } from './errori.js';
 import { aggiorna, statoCorrente } from './servizio.js';
-import { componiBadge, componiStato, componiStorico } from './vista.js';
+import {
+  componiBadge,
+  componiNegozio,
+  componiStato,
+  componiStorico,
+  componiVoucher,
+} from './vista.js';
 
 export const rotte = Router();
 
@@ -209,18 +216,45 @@ rotte.get(
   rotta(async () => componiBadge(await statoCorrente())),
 );
 
-const inArrivo: [string, string][] = [
-  ['/store', 'Il catalogo del negozio arriva col blocco 6.'],
-  ['/vouchers', 'I voucher arrivano col blocco 6.'],
-  ['/notifications', 'Le notifiche arrivano col blocco 8.'],
-];
-for (const [percorso, messaggio] of inArrivo) {
-  rotte.get(percorso, () => {
-    throw nonAncoraPronto(messaggio);
-  });
-}
-rotte.post('/store/:id/redeem', () => {
-  throw nonAncoraPronto('Il riscatto delle ricompense arriva col blocco 6.');
+/** GET /api/store — catalogue with `sbloccato` and `acquistabile` already decided. */
+rotte.get(
+  '/store',
+  rotta(async () => componiNegozio(await statoCorrente())),
+);
+
+/** GET /api/vouchers — what has been redeemed, newest first. */
+rotte.get(
+  '/vouchers',
+  rotta(async () => componiVoucher(await statoCorrente())),
+);
+
+/**
+ * POST /api/store/:id/redeem — spends the gems and issues the code.
+ *
+ * Answers with the whole state plus the fresh voucher, so the screen can show
+ * the code without a second call.
+ */
+rotte.post(
+  '/store/:id/redeem',
+  rotta(async (req) => {
+    const id = req.params['id'] ?? '';
+    let emesso: Voucher | undefined;
+    const dati = await aggiorna((corrente) => {
+      try {
+        const dopo = riscatta(corrente, id);
+        emesso = dopo.voucher[dopo.voucher.length - 1];
+        return dopo;
+      } catch (errore) {
+        if (errore instanceof ErroreNegozio) throw nonPossibile(errore.message);
+        throw errore;
+      }
+    });
+    return { voucher: emesso, stato: componiStato(dati) };
+  }),
+);
+
+rotte.get('/notifications', () => {
+  throw nonAncoraPronto('Le notifiche arrivano col blocco 8.');
 });
 
 function corpo(req: Request): Record<string, unknown> {

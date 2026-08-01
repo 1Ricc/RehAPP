@@ -61,5 +61,6 @@ export function datiIniziali(adesso: Date = new Date()): DatiPersistiti {
       recuperoManuale: null,
     },
     storico: [],
+    voucher: [],
   };
 }
