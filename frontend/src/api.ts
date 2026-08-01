@@ -46,6 +46,9 @@ export const declareRecovery = (motivo: string): Promise<RispostaStato> =>
     body: JSON.stringify({ motivo }),
   });
 
+export const closeDay = (): Promise<RispostaStato> =>
+  fetchJSON('/day/close', { method: 'POST' });
+
 export const advancePhase = (): Promise<RispostaStato> =>
   fetchJSON('/phase/advance', { method: 'POST' });
 

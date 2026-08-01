@@ -163,6 +163,8 @@ export interface GiornoCorrente {
   diario: Diario | null;
   /** Manual recovery declared by the user, at any time of the day. */
   recuperoManuale: { motivo: string; dichiaratoAlle: string } | null;
+  /** Set by POST /api/day/close; prevents the midnight rollover from re-scoring. */
+  finalizzato?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -325,6 +327,8 @@ export interface GiornoInCorso {
   rpMaturati: number;
   checklistCompleta: boolean;
   diario: Diario | null;
+  /** True after POST /api/day/close: stats are locked, cannot re-finalize. */
+  finalizzato: boolean;
 }
 
 /**

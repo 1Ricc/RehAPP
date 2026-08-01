@@ -72,42 +72,82 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
 
-      {/* Greeting header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: '50%',
-            background: '#2E3A2E', color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 700, fontSize: 15, flexShrink: 0,
-          }}>
-            {initials}
+      {/* Stats bar — streak front and centre */}
+      <div style={{
+        background: '#FFFFFF',
+        border: '1px solid #EEF0EA',
+        borderRadius: 22,
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+      }}>
+        {/* Streak */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <path d="M12 21c-4 0-6-2.5-6-6 0-3 2-5 3-8 1 2 1 3 2 3 0-2-1-4 1-7 3 3 5 6 5 9a5 5 0 01-5 9z" fill="#4FA8E8" />
+            </svg>
+            <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: 22, fontWeight: 800, color: '#21281F', lineHeight: 1 }}>
+              {barra.streakGiorni}
+            </span>
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13, color: '#8A9485', fontWeight: 700 }}>Good to see you,</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: profilo.colore, marginTop: 2 }}>
-              {profilo.nome}
-            </div>
-          </div>
+          <span style={{ fontSize: 10, color: '#8A9485', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>streak</span>
         </div>
 
-        {barra.streakGiorni >= 1 && (
-          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 22, fontWeight: 700, color: '#1D74B8' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24">
-                <path d="M12 21c-4 0-6-2.5-6-6 0-3 2-5 3-8 1 2 1 3 2 3 0-2-1-4 1-7 3 3 5 6 5 9a5 5 0 01-5 9z" fill="#1D74B8" />
-              </svg>
-              {barra.streakGiorni}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: '#C9A227' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" fill="none" stroke="#C9A227" strokeWidth="2" />
-                <path d="M12 7v5l3.5 2" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              {barra.gemme} pts
-            </div>
+        <div style={{ width: 1, height: 36, background: '#EEF0EA' }} />
+
+        {/* RP */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+          <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: 22, fontWeight: 800, color: '#4FA8E8', lineHeight: 1 }}>
+            {barra.rpProgressoFase}
+          </span>
+          <span style={{ fontSize: 10, color: '#8A9485', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>rp</span>
+        </div>
+
+        <div style={{ width: 1, height: 36, background: '#EEF0EA' }} />
+
+        {/* Gems */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+          <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: 22, fontWeight: 800, color: '#C9A227', lineHeight: 1 }}>
+            {barra.gemme}
+          </span>
+          <span style={{ fontSize: 10, color: '#8A9485', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>gems</span>
+        </div>
+
+        <div style={{ width: 1, height: 36, background: '#EEF0EA' }} />
+
+        {/* Multiplier */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+          <div style={{
+            background: barra.moltiplicatore > 1 ? '#EAF4FC' : '#F5F5F3',
+            borderRadius: 9,
+            padding: '3px 10px',
+          }}>
+            <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: 14, fontWeight: 800, color: barra.moltiplicatore > 1 ? '#1D74B8' : '#8A9485', lineHeight: 1.4 }}>
+              ×{barra.moltiplicatore.toFixed(2)}
+            </span>
           </div>
-        )}
+          <span style={{ fontSize: 10, color: '#8A9485', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>mult</span>
+        </div>
+      </div>
+
+      {/* Greeting */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: '50%',
+          background: '#2E3A2E', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 700, fontSize: 15, flexShrink: 0,
+        }}>
+          {initials}
+        </div>
+        <div>
+          <div style={{ fontSize: 13, color: '#8A9485', fontWeight: 700 }}>Good to see you,</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: profilo.colore, marginTop: 2 }}>
+            {profilo.nome}
+          </div>
+        </div>
       </div>
 
       {/* Level-up banner */}
@@ -260,12 +300,6 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
         </button>
       )}
 
-      {/* Multiplier note */}
-      {barra.moltiplicatore > 1 && (
-        <div style={{ textAlign: 'center', fontSize: 13, color: '#8A9485' }}>
-          🔥 ×{barra.moltiplicatore.toFixed(2)} streak multiplier active
-        </div>
-      )}
     </div>
   );
 }

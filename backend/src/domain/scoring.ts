@@ -236,6 +236,72 @@ export function nuovoGiorno(data: DataISO): GiornoCorrente {
 }
 
 /**
+ * Manually finalises today without advancing to the next day.
+ *
+ * Runs the same scoring math as `chiudiGiornata` — streak, gems, multiplier,
+ * RP — but keeps `giornoCorrente` at today's date and sets `finalizzato: true`.
+ * `sincronizzaGiornata` checks this flag and skips re-scoring tomorrow morning.
+ *
+ * Only callable when `checklistCompleta` is true (enforced by the route).
+ */
+export function finalizzaGiornata(dati: DatiPersistiti): DatiPersistiti {
+  const fase = faseCorrente(dati);
+  const { giornoCorrente: giorno, stato } = dati;
+  const classe = classificaGiorno(dati.piano, fase, stato, giorno);
+  const recupero = classe.tipoGiorno === 'recupero';
+
+  const rp = rpDelGiorno(fase, giorno, recupero);
+  const vasAlti = contaVasAlti(stato.giorniVasAltiConsecutivi, giorno);
+
+  const streak = recupero ? stato.streakGiorni : classe.checklistCompleta ? stato.streakGiorni + 1 : 0;
+  const molt = recupero ? stato.moltiplicatoreAttuale : moltiplicatore(streak);
+  const gemme = recupero ? stato.gemmePortafoglio : stato.gemmePortafoglio + rp * molt;
+  const rpProgressoFase = stato.rpProgressoFase + rp;
+
+  const nuovoStato: StatoUtente = {
+    ...stato,
+    rpProgressoFase,
+    rpTotali: stato.rpTotali + rp,
+    giorniFaseTrascorsi: recupero ? stato.giorniFaseTrascorsi : stato.giorniFaseTrascorsi + 1,
+    gemmePortafoglio: gemme,
+    streakGiorni: streak,
+    moltiplicatoreAttuale: molt,
+    recuperiManualiUsatiInFase:
+      classe.motivoRecupero === 'manuale'
+        ? stato.recuperiManualiUsatiInFase + 1
+        : stato.recuperiManualiUsatiInFase,
+    giorniVasAltiConsecutivi: vasAlti,
+    avanzamentoDisponibile: rpProgressoFase >= stato.sogliaFaseAttuale,
+    ultimaGiornataChiusa: giorno.data,
+  };
+
+  const voce: GiornoStorico = {
+    data: giorno.data,
+    tipoGiorno: classe.tipoGiorno,
+    motivoRecupero: classe.motivoRecupero,
+    checklistCompleta: classe.checklistCompleta,
+    blocchiCompletati: {
+      esercizi: eserciziCompleti(fase, giorno),
+      farmaci: fase.farmaci.length > 0 && farmaciCompleti(fase, giorno),
+      diario: giorno.diario !== null,
+    },
+    rpGuadagnati: rp,
+    gemmeGuadagnate: recupero ? 0 : rp * molt,
+    moltiplicatoreApplicato: molt,
+    streakGiorni: streak,
+    vas: giorno.diario?.vas ?? null,
+    faseRaggiunta: stato.faseRaggiunta,
+  };
+
+  return {
+    ...dati,
+    stato: nuovoStato,
+    giornoCorrente: { ...dati.giornoCorrente, finalizzato: true },
+    storico: [...dati.storico, voce],
+  };
+}
+
+/**
  * Confirms the level-up: pays the end-of-phase bonus and moves to the next
  * phase. In the demo this is auto-confirmed, in reality the physio signs it off.
  *

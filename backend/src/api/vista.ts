@@ -15,7 +15,7 @@ import {
 } from '../domain/benefit.js';
 import { RP_DIARIO, RP_ESERCIZI, RP_FARMACI } from '../domain/costanti.js';
 import { catalogo, prossimaRicompensa } from '../domain/negozio.js';
-import { classificaGiorno, faseCorrente, livelloAllerta, rpDelGiorno } from '../domain/scoring.js';
+import { classificaGiorno, faseCorrente, livelloAllerta, moltiplicatore, rpDelGiorno } from '../domain/scoring.js';
 import { aggiungiGiorni } from '../domain/tempo.js';
 import type {
   Allerta,
@@ -50,16 +50,38 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
     // The full notion, from the engine: never derived from `richiestoOggi`.
     checklistCompleta: classe.checklistCompleta,
     diario: giornoCorrente.diario,
+    finalizzato: giornoCorrente.finalizzato === true,
   };
 
+  const isNormal = tipoGiorno === 'normale';
+  // After manual finalisation, stato already carries today's values — skip preview.
+  const isFinalized = oggi.finalizzato;
+
+  // RP: live while ticking, real after finalization.
+  const rpVivi = isFinalized ? stato.rpProgressoFase : stato.rpProgressoFase + oggi.rpMaturati;
+
+  // Streak/mult/gems: preview until checklist done, real after finalization.
+  const streakVivo = isFinalized
+    ? stato.streakGiorni
+    : classe.checklistCompleta && isNormal
+      ? stato.streakGiorni + 1
+      : stato.streakGiorni;
+  const moltVivo = isFinalized
+    ? stato.moltiplicatoreAttuale
+    : classe.checklistCompleta && isNormal
+      ? moltiplicatore(streakVivo)
+      : stato.moltiplicatoreAttuale;
+  const gemmeVive = isFinalized
+    ? Math.floor(stato.gemmePortafoglio)
+    : Math.floor(stato.gemmePortafoglio + (isNormal ? oggi.rpMaturati * moltVivo : 0));
+
   const barra: BarraStato = {
-    streakGiorni: stato.streakGiorni,
-    moltiplicatore: stato.moltiplicatoreAttuale,
+    streakGiorni: streakVivo,
+    moltiplicatore: moltVivo,
     moltiplicatoreCongelato: tipoGiorno === 'recupero',
-    // Floored: showing 200 with 199.6 in the wallet breaks the buy button.
-    gemme: Math.floor(stato.gemmePortafoglio),
-    rpProgressoFase: stato.rpProgressoFase,
-    rpTotali: stato.rpTotali,
+    gemme: gemmeVive,
+    rpProgressoFase: rpVivi,
+    rpTotali: isFinalized ? stato.rpTotali : stato.rpTotali + oggi.rpMaturati,
   };
 
   const cardFase: CardFase = {
@@ -68,8 +90,8 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
     nome: fase.nome,
     obiettivo: fase.obiettivo,
     sogliaRp: stato.sogliaFaseAttuale,
-    rpProgresso: stato.rpProgressoFase,
-    rpMancanti: Math.max(stato.sogliaFaseAttuale - stato.rpProgressoFase, 0),
+    rpProgresso: rpVivi,
+    rpMancanti: Math.max(stato.sogliaFaseAttuale - rpVivi, 0),
     bonusGemmeFine: fase.bonusGemme,
     giorniTrascorsi: stato.giorniFaseTrascorsi,
     durataGiorniStimata: fase.durataGiorniStimata,
@@ -77,7 +99,8 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
       giornoCorrente.data,
       Math.max(fase.durataGiorniStimata - stato.giorniFaseTrascorsi, 0),
     ),
-    avanzamentoDisponibile: stato.avanzamentoDisponibile,
+    avanzamentoDisponibile:
+      stato.avanzamentoDisponibile || rpVivi >= stato.sogliaFaseAttuale,
     precauzioni: fase.precauzioni,
   };
 

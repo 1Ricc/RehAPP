@@ -13,7 +13,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 
 import { ErroreNegozio, riscatta } from '../domain/negozio.js';
 import { giorniDiAssenza, notifiche, silenzio } from '../domain/notifiche.js';
-import { avanzaFase, faseCorrente } from '../domain/scoring.js';
+import { avanzaFase, classificaGiorno, faseCorrente, finalizzaGiornata } from '../domain/scoring.js';
 import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costanti.js';
 import type { Diario, EsercizioPianoCreato, FarmacoPianoCreato, IdBlocco, PianoCreato, Voucher } from '../domain/types.js';
 import { nonPossibile, richiestaNonValida } from './errori.js';
@@ -166,6 +166,32 @@ rotte.post(
       }),
     );
   }),
+);
+
+/**
+ * POST /api/day/close — manually finalises today.
+ *
+ * Runs the full day-close math (streak +1, gems, multiplier) right now and
+ * marks the day finalised so the 2am rollover does not re-score it. Requires
+ * the checklist to be complete; can only be called once per day.
+ */
+rotte.post(
+  '/day/close',
+  rotta(async () =>
+    componiStato(
+      await aggiorna((dati) => {
+        const fase = faseCorrente(dati);
+        const classe = classificaGiorno(dati.piano, fase, dati.stato, dati.giornoCorrente);
+        if (!classe.checklistCompleta) {
+          throw richiestaNonValida('La checklist non è ancora completa.');
+        }
+        if (dati.giornoCorrente.finalizzato) {
+          throw nonPossibile('La giornata è già stata finalizzata.');
+        }
+        return finalizzaGiornata(dati);
+      }),
+    ),
+  ),
 );
 
 /**

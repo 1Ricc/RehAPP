@@ -8,8 +8,8 @@
  */
 
 import { load, save } from '../data/store.js';
-import { chiudiGiornata } from '../domain/scoring.js';
-import { giornataLogica } from '../domain/tempo.js';
+import { chiudiGiornata, nuovoGiorno } from '../domain/scoring.js';
+import { aggiungiGiorni, giornataLogica } from '../domain/tempo.js';
 import type { DatiPersistiti } from '../domain/types.js';
 
 /** Backstop against a clock jump turning the rollover into an infinite loop. */
@@ -25,7 +25,12 @@ export function sincronizzaGiornata(dati: DatiPersistiti, adesso: Date): DatiPer
   let corrente = dati;
   let giri = 0;
   while (corrente.giornoCorrente.data < oggi && giri < MAX_GIORNI_RECUPERATI) {
-    corrente = chiudiGiornata(corrente);
+    if (corrente.giornoCorrente.finalizzato) {
+      // Already manually finalised; just open the next day without re-scoring.
+      corrente = { ...corrente, giornoCorrente: nuovoGiorno(aggiungiGiorni(corrente.giornoCorrente.data, 1)) };
+    } else {
+      corrente = chiudiGiornata(corrente);
+    }
     giri += 1;
   }
   return corrente;

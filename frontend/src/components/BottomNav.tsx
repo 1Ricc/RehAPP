@@ -17,14 +17,12 @@ function HomeIcon({ c }: { c: string }) {
   );
 }
 
-function DumbbellIcon({ c }: { c: string }) {
+function ClipboardCheckIcon({ c }: { c: string }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M6.5 6.5h.01M17.5 6.5h.01M6.5 17.5h.01M17.5 17.5h.01M4 12h16" stroke={c} strokeWidth="2" strokeLinecap="round"/>
-      <rect x="4" y="9.5" width="2" height="5" rx="1" stroke={c} strokeWidth="2"/>
-      <rect x="18" y="9.5" width="2" height="5" rx="1" stroke={c} strokeWidth="2"/>
-      <rect x="2" y="7.5" width="2" height="9" rx="1" stroke={c} strokeWidth="2"/>
-      <rect x="20" y="7.5" width="2" height="9" rx="1" stroke={c} strokeWidth="2"/>
+      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke={c} strokeWidth="2" strokeLinecap="round"/>
+      <rect x="9" y="3" width="6" height="4" rx="1" stroke={c} strokeWidth="2"/>
+      <path d="M9 12l2 2 4-4" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -58,7 +56,7 @@ function PlusCircleIcon({ c }: { c: string }) {
 
 const TABS: { id: View; label: string; Icon: (p: { c: string }) => JSX.Element }[] = [
   { id: 'main',    label: 'Home',    Icon: HomeIcon },
-  { id: 'workout', label: 'Workout', Icon: DumbbellIcon },
+  { id: 'workout', label: 'Today',   Icon: ClipboardCheckIcon },
   { id: 'profile', label: 'Profile', Icon: PersonIcon },
   { id: 'shop',    label: 'Shop',    Icon: BagIcon },
   { id: 'create',  label: 'Create',  Icon: PlusCircleIcon },
