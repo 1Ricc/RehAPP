@@ -6,6 +6,13 @@
  * engine can never disagree. Gems leave from here floored, always.
  */
 
+import {
+  badge,
+  benefitInApp,
+  coloreProfilo,
+  prossimoBadge,
+  prossimoBenefit,
+} from '../domain/benefit.js';
 import { RP_DIARIO, RP_ESERCIZI, RP_FARMACI } from '../domain/costanti.js';
 import { classificaGiorno, faseCorrente, livelloAllerta, rpDelGiorno } from '../domain/scoring.js';
 import { aggiungiGiorni } from '../domain/tempo.js';
@@ -17,6 +24,7 @@ import type {
   DatiPersistiti,
   Fase,
   GiornoInCorso,
+  RispostaBadge,
   RispostaStato,
   RispostaStorico,
   TipoGiorno,
@@ -69,13 +77,28 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
     avanzamentoDisponibile: stato.avanzamentoDisponibile,
   };
 
+  const colore = coloreProfilo(stato.faseRaggiunta);
+
   return {
     paziente: piano.paziente,
+    profilo: {
+      nome: piano.paziente.nome,
+      colore: colore.colore,
+      etichettaColore: colore.etichetta,
+    },
     fase: cardFase,
     barra,
     oggi,
     allerta: componiAllerta(stato.giorniVasAltiConsecutivi),
+    benefit: benefitInApp(stato.faseRaggiunta),
+    prossimoBenefit: prossimoBenefit(stato.faseRaggiunta),
   };
+}
+
+/** GET /api/badges — earned ones plus the closest one still missing. */
+export function componiBadge(dati: DatiPersistiti): RispostaBadge {
+  const elenco = badge(dati);
+  return { badge: elenco, prossimo: prossimoBadge(elenco) };
 }
 
 function componiBlocchi(

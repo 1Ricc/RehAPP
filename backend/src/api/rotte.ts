@@ -17,7 +17,7 @@ import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costan
 import type { Diario, IdBlocco } from '../domain/types.js';
 import { nonAncoraPronto, nonPossibile, richiestaNonValida } from './errori.js';
 import { aggiorna, statoCorrente } from './servizio.js';
-import { componiStato, componiStorico } from './vista.js';
+import { componiBadge, componiStato, componiStorico } from './vista.js';
 
 export const rotte = Router();
 
@@ -203,10 +203,15 @@ rotte.get(
 // Blocks not built yet — declared so the frontend knows the names
 // ---------------------------------------------------------------------------
 
+/** GET /api/badges — derived from the state on every call, never stored. */
+rotte.get(
+  '/badges',
+  rotta(async () => componiBadge(await statoCorrente())),
+);
+
 const inArrivo: [string, string][] = [
   ['/store', 'Il catalogo del negozio arriva col blocco 6.'],
   ['/vouchers', 'I voucher arrivano col blocco 6.'],
-  ['/badges', 'I badge arrivano col blocco 7.'],
   ['/notifications', 'Le notifiche arrivano col blocco 8.'],
 ];
 for (const [percorso, messaggio] of inArrivo) {

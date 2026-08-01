@@ -312,10 +312,16 @@ export interface GiornoInCorso {
  */
 export interface RispostaStato {
   paziente: Paziente;
+  /** Name plus the colour the current phase earned (README §5.3). */
+  profilo: { nome: string; colore: string; etichettaColore: string };
   fase: CardFase;
   barra: BarraStato;
   oggi: GiornoInCorso;
   allerta: Allerta;
+  /** All of them, unlocked or not: the locked ones are the teaser. */
+  benefit: BenefitInApp[];
+  /** The next one to unlock, for the home teaser. Null when they are all open. */
+  prossimoBenefit: BenefitInApp | null;
 }
 
 /**
@@ -324,6 +330,33 @@ export interface RispostaStato {
  */
 export interface RispostaStorico {
   giorni: GiornoStorico[];
+}
+
+/** An app feature gated on clinical progress, never on gems (README §5.3). */
+export interface BenefitInApp {
+  id: 'grafico-dolore' | 'calendario-heatmap';
+  nome: string;
+  descrizione: string;
+  /** The whole gate: `faseRaggiunta >= faseRichiesta`. */
+  faseRichiesta: number;
+  sbloccato: boolean;
+}
+
+/** Always derived from the state, never stored, so it cannot fall out of sync. */
+export interface Badge {
+  id: string;
+  nome: string;
+  descrizione: string;
+  ottenuto: boolean;
+  progresso: number;
+  obiettivo: number;
+}
+
+/** GET /api/badges */
+export interface RispostaBadge {
+  badge: Badge[];
+  /** The closest one still missing, or null once they are all earned. */
+  prossimo: Badge | null;
 }
 
 /** Every error, every route. Never a stack trace. */

@@ -13,6 +13,13 @@ import { describe, expect, it } from 'vitest';
 
 import { creaPianoMarco } from '../src/data/seed/piano-marco.js';
 import { creaProfilo } from '../src/data/seed/profili.js';
+import {
+  badge,
+  benefitInApp,
+  coloreProfilo,
+  prossimoBadge,
+  prossimoBenefit,
+} from '../src/domain/benefit.js';
 import { RP_DIARIO, RP_ESERCIZI, RP_FARMACI, VERSIONE_STATO } from '../src/domain/costanti.js';
 import {
   avanzaFase,
@@ -330,6 +337,58 @@ describe('84 giorni pieni', () => {
 
   it('arriva in fase 4 e non va oltre', () => {
     expect(fine.stato.faseRaggiunta).toBe(4);
+  });
+});
+
+describe('benefit in-app e badge', () => {
+  const adesso = new Date('2026-08-01T12:00:00');
+
+  it('il gating è una sola condizione: faseRaggiunta >= faseRichiesta', () => {
+    expect(benefitInApp(1).map((b) => b.sbloccato)).toEqual([false, false]);
+    expect(benefitInApp(2).map((b) => b.sbloccato)).toEqual([true, false]);
+    expect(benefitInApp(3).map((b) => b.sbloccato)).toEqual([true, true]);
+  });
+
+  it('il grafico del dolore si apre in fase 2, il calendario in fase 3', () => {
+    expect(prossimoBenefit(1)?.id).toBe('grafico-dolore');
+    expect(prossimoBenefit(2)?.id).toBe('calendario-heatmap');
+    expect(prossimoBenefit(4)).toBeNull();
+  });
+
+  it('il colore del profilo cambia a ogni fase e non esce dai bordi', () => {
+    const colori = [1, 2, 3, 4].map((f) => coloreProfilo(f).etichetta);
+    expect(new Set(colori).size).toBe(4);
+    expect(coloreProfilo(0)).toEqual(coloreProfilo(1));
+    expect(coloreProfilo(99)).toEqual(coloreProfilo(4));
+  });
+
+  it('a stato vuoto nessun badge è ottenuto', () => {
+    const elenco = badge(creaProfilo('nuovo', adesso));
+    expect(elenco.filter((b) => b.ottenuto)).toHaveLength(0);
+    expect(elenco).toHaveLength(4);
+  });
+
+  it('avanzato ha tutti e quattro i badge', () => {
+    const elenco = badge(creaProfilo('avanzato', adesso));
+    expect(elenco.filter((b) => b.ottenuto).map((b) => b.id)).toEqual([
+      'prima-settimana',
+      'fase-superata',
+      'streak-30',
+      'diario-14',
+    ]);
+    expect(prossimoBadge(elenco)).toBeNull();
+  });
+
+  it('premia lo streak massimo raggiunto, non quello di oggi', () => {
+    // Seven full days then a lost one: the badge stays, the streak does not.
+    const rotto = chiudiGiornata(giorniPieni(statoVuoto(), 7));
+    expect(rotto.stato.streakGiorni).toBe(0);
+    expect(badge(rotto).find((b) => b.id === 'prima-settimana')?.ottenuto).toBe(true);
+  });
+
+  it('propone come prossimo quello più vicino', () => {
+    const elenco = badge(giorniPieni(statoVuoto(), 10));
+    expect(prossimoBadge(elenco)?.id).toBe('diario-14');
   });
 });
 
