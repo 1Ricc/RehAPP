@@ -6,7 +6,7 @@ interface Props {
 }
 
 const ACCENT = '#4FA8E8';
-const DIM = '#B3BAA9';
+const DIM = '#9BA89A';
 
 function HomeIcon({ c }: { c: string }) {
   return (
@@ -68,15 +68,20 @@ export default function BottomNav({ active, onNavigate }: Props) {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 0,
+      bottom: 20,
       left: '50%',
       transform: 'translateX(-50%)',
-      width: '100%',
-      maxWidth: 430,
-      background: '#FFFFFF',
-      borderTop: '1px solid #EEF0EA',
+      width: 'calc(100% - 48px)',
+      maxWidth: 382,
+      background: 'rgba(255, 255, 255, 0.72)',
+      backdropFilter: 'blur(24px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+      borderRadius: 28,
+      border: '1px solid rgba(255, 255, 255, 0.85)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)',
       display: 'flex',
       zIndex: 100,
+      padding: '6px 4px',
     }}>
       {TABS.map(({ id, label, Icon }) => {
         const on = id === active;
@@ -91,14 +96,16 @@ export default function BottomNav({ active, onNavigate }: Props) {
               flexDirection: 'column',
               alignItems: 'center',
               gap: 3,
-              padding: '10px 0 14px',
-              background: 'none',
+              padding: '8px 4px 8px',
+              background: on ? 'rgba(79,168,232,0.13)' : 'none',
               border: 'none',
+              borderRadius: 20,
               cursor: 'pointer',
               color: c,
               fontFamily: 'Inter, sans-serif',
               fontSize: 10,
               fontWeight: 700,
+              transition: 'background 0.15s ease',
             }}
           >
             <Icon c={c} />
