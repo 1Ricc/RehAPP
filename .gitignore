@@ -1,5 +1,8 @@
 # Documentazione: README, CLAUDE, TODO, PROMPTS, sistema-punteggio
 *.md
+# Eccezione: le istruzioni di avvio devono stare nel repo, altrimenti chi clona
+# non sa come far partire il backend il giorno della demo.
+!backend/README.md
 
 node_modules/
 dist/
