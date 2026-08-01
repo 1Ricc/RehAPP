@@ -5,18 +5,18 @@
  * the whole state**, never a diff. The frontend therefore never recomposes
  * anything by hand — it replaces what it has and redraws.
  *
- * Routes belonging to blocks not yet built (store, vouchers, badges,
- * notifications) answer 501 with a readable message instead of 404: whoever
- * builds the frontend gets told it is coming, not that they typed the URL wrong.
+ * Nothing here decides anything either: the routes validate the input, call the
+ * pure domain, and shape the answer. Every judgement lives in `src/domain`.
  */
 
 import { Router, type NextFunction, type Request, type Response } from 'express';
 
 import { ErroreNegozio, riscatta } from '../domain/negozio.js';
+import { giorniDiAssenza, notifiche, silenzio } from '../domain/notifiche.js';
 import { avanzaFase, faseCorrente } from '../domain/scoring.js';
 import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costanti.js';
 import type { Diario, IdBlocco, Voucher } from '../domain/types.js';
-import { nonAncoraPronto, nonPossibile, richiestaNonValida } from './errori.js';
+import { nonPossibile, richiestaNonValida } from './errori.js';
 import { aggiorna, statoCorrente } from './servizio.js';
 import {
   componiBadge,
@@ -207,7 +207,7 @@ rotte.get(
 );
 
 // ---------------------------------------------------------------------------
-// Blocks not built yet — declared so the frontend knows the names
+// Store, badges, notifications
 // ---------------------------------------------------------------------------
 
 /** GET /api/badges — derived from the state on every call, never stored. */
@@ -253,9 +253,23 @@ rotte.post(
   }),
 );
 
-rotte.get('/notifications', () => {
-  throw nonAncoraPronto('Le notifiche arrivano col blocco 8.');
-});
+/**
+ * GET /api/notifications — the queue, computed server-side.
+ *
+ * Also reports *why* it is quiet when it is: the silence rules are the designed
+ * part, and showing them is what makes the point on stage.
+ */
+rotte.get(
+  '/notifications',
+  rotta(async () => {
+    const dati = await statoCorrente();
+    return {
+      coda: notifiche(dati),
+      silenzio: silenzio(dati, new Date()),
+      giorniDiAssenza: giorniDiAssenza(dati),
+    };
+  }),
+);
 
 function corpo(req: Request): Record<string, unknown> {
   return req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};

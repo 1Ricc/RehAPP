@@ -107,13 +107,17 @@ export function creaProfilo(nome: NomeProfilo, adesso: Date = new Date()): DatiP
       return vuoto(giornataLogica(adesso));
 
     /**
-     * Forty days of history. Day one is deliberately incomplete — the calendar
-     * needs a lost day to be worth looking at — and everything after it is
-     * full. The five recovery days come from the plan (rest days and the
-     * revaluation visit), so the streak survives them: 34 full days, x2.65.
+     * Forty-one days of history. Day one is deliberately incomplete — the
+     * calendar needs a lost day to be worth looking at — and everything after
+     * it is full. The six recovery days come from the plan (rest days and the
+     * two revaluation visits), so the streak survives them: 34 full days, x2.65.
+     *
+     * The count is 41 and not 40 for a reason worth keeping: at 40 the day left
+     * open is the revaluation at offset 41, so the profile loaded straight into
+     * a frozen checklist and there was nothing to tick on stage.
      */
     case 'avanzato':
-      return simula(40, (i) => (i === 0 ? 'parziale' : 'pieno'), doloreRealistico, adesso);
+      return simula(41, (i) => (i === 0 ? 'parziale' : 'pieno'), doloreRealistico, adesso);
 
     /**
      * Fourteen days in phase one, one of which is a prescribed rest day: 13

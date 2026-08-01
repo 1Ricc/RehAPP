@@ -29,6 +29,12 @@ import {
   riscatta,
 } from '../src/domain/negozio.js';
 import {
+  finestraDiQuiete,
+  giorniDiAssenza,
+  notifiche,
+  silenzio,
+} from '../src/domain/notifiche.js';
+import {
   avanzaFase,
   chiudiGiornata,
   classificaGiorno,
@@ -462,6 +468,95 @@ describe('negozio e voucher', () => {
   });
 });
 
+describe('notifiche: il silenzio viene prima', () => {
+  const pomeriggio = new Date('2026-01-04T17:00:00');
+  const base = giorniPieni(statoVuoto(), 3);
+
+  it('un giorno di recupero è muto, e lo dice', () => {
+    const recupero = {
+      ...base,
+      giornoCorrente: { ...base.giornoCorrente, diario: { vas: 8, compilatoAlle: '09:00' } },
+    };
+    expect(silenzio(recupero, pomeriggio)?.motivo).toBe('giorno-di-recupero');
+    // Nessun promemoria di esercizi a chi ha appena dichiarato VAS 8.
+    expect(notifiche(recupero, pomeriggio).some((n) => n.tipo === 'esercizi')).toBe(false);
+  });
+
+  it('a checklist completa non arriva più niente', () => {
+    expect(silenzio(pieno(base), pomeriggio)?.motivo).toBe('checklist-completa');
+  });
+
+  it('la finestra di quiete esce dagli orari dei farmaci nel piano', () => {
+    // Ibuprofene 08:00 e 20:00 → quiete dalle 22 alle 8.
+    expect(finestraDiQuiete(base)).toEqual({ inizio: 22, fine: 8 });
+    expect(silenzio(base, new Date('2026-01-04T23:30:00'))?.motivo).toBe('orario-notturno');
+    expect(silenzio(base, new Date('2026-01-04T06:00:00'))?.motivo).toBe('orario-notturno');
+  });
+
+  it('non supera mai le tre notifiche al giorno', () => {
+    const sera = new Date('2026-01-04T21:00:00');
+    expect(notifiche(base, sera).length).toBeLessThanOrEqual(3);
+  });
+
+  it('non dice due volte la stessa cosa', () => {
+    const id = notifiche(base, new Date('2026-01-04T21:00:00')).map((n) => n.id);
+    expect(new Set(id).size).toBe(id.length);
+  });
+
+  it('lo stesso evento ha sempre lo stesso testo, non cambia a ogni poll', () => {
+    const a = notifiche(base, pomeriggio);
+    const b = notifiche(base, pomeriggio);
+    expect(a.map((n) => n.testo)).toEqual(b.map((n) => n.testo));
+  });
+});
+
+describe('notifiche: escalation inversa e messaggi che contano', () => {
+  it('dal terzo giorno di assenza chiede solo il diario', () => {
+    let d = statoVuoto();
+    for (let i = 0; i < 3; i++) d = chiudiGiornata(d); // nessuna spunta: giorni persi
+    expect(giorniDiAssenza(d)).toBe(3);
+    const coda = notifiche(d, new Date('2026-01-04T17:00:00'));
+    expect(coda.map((n) => n.tipo)).toContain('assenza');
+    expect(coda.some((n) => n.tipo === 'esercizi')).toBe(false);
+  });
+
+  it('il mattino dopo un recupero dice che il moltiplicatore è ancora lì', () => {
+    const dopo7 = giorniPieni(statoVuoto(), 7);
+    const conRecupero = chiudiGiornata({
+      ...dopo7,
+      giornoCorrente: { ...dopo7.giornoCorrente, diario: { vas: 8, compilatoAlle: '20:30' } },
+    });
+    const mattina = notifiche(conRecupero, new Date('2026-01-09T08:30:00'));
+    const ripresa = mattina.find((n) => n.tipo === 'ripresa-dopo-recupero');
+    expect(ripresa).toBeDefined();
+    expect(ripresa!.testo).toContain('×1,30');
+  });
+
+  it('dopo uno streak perso ricorda che gli RP non arretrano', () => {
+    const rotto = chiudiGiornata(giorniPieni(statoVuoto(), 7));
+    const mattina = notifiche(rotto, new Date('2026-01-09T08:30:00'));
+    const perso = mattina.find((n) => n.tipo === 'streak-perso');
+    expect(perso).toBeDefined();
+    expect(perso!.testo).toContain('154');
+  });
+
+  it('nessun messaggio contiene le parole vietate dal §7.3', () => {
+    const vietate = /hai fallito|stai perdendo|non hai ancora|hai saltato|😢|😞/i;
+    const stati = [
+      giorniPieni(statoVuoto(), 3),
+      chiudiGiornata(giorniPieni(statoVuoto(), 7)),
+      creaProfilo('avanzato', new Date('2026-08-01T12:00:00')),
+    ];
+    for (const s of stati) {
+      for (const ora of ['08:30', '17:00', '21:00']) {
+        for (const n of notifiche(s, new Date(`2026-01-09T${ora}:00`))) {
+          expect(n.testo).not.toMatch(vietate);
+        }
+      }
+    }
+  });
+});
+
 describe('profili demo', () => {
   const adesso = new Date('2026-08-01T12:00:00');
 
@@ -475,7 +570,7 @@ describe('profili demo', () => {
     const d = creaProfilo('avanzato', adesso);
     expect(d.stato.streakGiorni).toBe(34);
     expect(d.stato.moltiplicatoreAttuale).toBe(2.65);
-    expect(d.storico).toHaveLength(40);
+    expect(d.storico).toHaveLength(41);
     expect(d.storico.filter((g) => g.tipoGiorno === 'recupero').length).toBeGreaterThan(0);
     expect(d.storico.filter((g) => !g.checklistCompleta).length).toBeGreaterThan(0);
   });

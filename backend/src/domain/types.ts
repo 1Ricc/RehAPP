@@ -412,6 +412,44 @@ export interface RispostaVoucher {
   voucher: Voucher[];
 }
 
+// ---------------------------------------------------------------------------
+// Notifications (README §7)
+// ---------------------------------------------------------------------------
+
+export type TipoNotifica =
+  | 'farmaci'
+  | 'farmaci-sera'
+  | 'esercizi'
+  | 'manca-poco'
+  | 'chiusura'
+  | 'ripresa-dopo-recupero'
+  | 'streak-perso'
+  | 'assenza'
+  | 'sblocco'
+  | 'level-up';
+
+export interface Notifica {
+  /** `2026-08-01:esercizi` — unique per day, so the same thing is never said twice. */
+  id: string;
+  tipo: TipoNotifica;
+  testo: string;
+  orario: string;
+}
+
+/** Why the app is saying nothing. Worth showing in the demo: it is the design. */
+export interface Silenzio {
+  motivo: 'giorno-di-recupero' | 'checklist-completa' | 'orario-notturno';
+  spiegazione: string;
+}
+
+/** GET /api/notifications */
+export interface RispostaNotifiche {
+  coda: Notifica[];
+  /** Null when the app would speak. */
+  silenzio: Silenzio | null;
+  giorniDiAssenza: number;
+}
+
 /** Every error, every route. Never a stack trace. */
 export interface RispostaErrore {
   errore: string;
