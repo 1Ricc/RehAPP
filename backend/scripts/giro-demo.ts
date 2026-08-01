@@ -12,7 +12,7 @@
  * first, something is keeping state it should not.
  */
 
-const BASE = process.env['REHAPP_URL'] ?? 'http://localhost:3001';
+const BASE = process.env['REHUB_URL'] ?? 'http://localhost:3001';
 
 let passati = 0;
 const falliti: string[] = [];
@@ -131,7 +131,7 @@ async function giro(): Promise<void> {
   verifica('riscatto riuscito', riscatto.stato === 200);
   verifica(
     'codice nel formato giusto',
-    /^REHAPP-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/.test(riscatto.dati.voucher?.codice ?? ''),
+    /^REHUB-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/.test(riscatto.dati.voucher?.codice ?? ''),
     riscatto.dati.voucher?.codice,
   );
   verifica('gemme scalate', riscatto.dati.stato.barra.gemme === 933, riscatto.dati.stato.barra.gemme);

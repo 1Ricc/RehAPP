@@ -594,13 +594,13 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
             opacity: toastIn ? 1 : 0,
             transition: 'top 0.38s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease',
             zIndex: 150,
-            background: '#21281F',
+            background: '#4FA8E8',
             borderRadius: 20,
             padding: '12px 18px',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
+            boxShadow: '0 8px 24px rgba(79,168,232,0.35)',
             width: 'calc(100% - 48px)',
             maxWidth: 340,
             cursor: 'pointer',
@@ -608,8 +608,8 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
         >
           <span style={{ fontSize: 24, lineHeight: 1 }}>{toast.emoji}</span>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF' }}>{toast.title}</div>
-            <div style={{ fontSize: 12, color: '#8A9485', marginTop: 2 }}>{toast.subtitle}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#21281F' }}>{toast.title}</div>
+            <div style={{ fontSize: 12, color: 'rgba(33,40,31,0.65)', marginTop: 2 }}>{toast.subtitle}</div>
           </div>
         </div>
       )}

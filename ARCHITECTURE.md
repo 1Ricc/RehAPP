@@ -1,4 +1,4 @@
-# RehAPP Architecture
+# Rehub Architecture
 
 Hackathon rehab-companion app. Single physiotherapy patient, one hardcoded user, no auth by design (24-hour build).
 
@@ -7,7 +7,7 @@ Hackathon rehab-companion app. Single physiotherapy patient, one hardcoded user,
 ## Repository Layout
 
 ```
-RehAPP/
+Rehub/
 ├── backend/               Express/TypeScript server (port 3001)
 │   ├── data/
 │   │   ├── state.db       SQLite database (committed)

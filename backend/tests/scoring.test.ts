@@ -413,9 +413,9 @@ describe('negozio e voucher', () => {
     return { ...d, stato: { ...d.stato, gemmePortafoglio: gemme, faseRaggiunta: fase } };
   };
 
-  it('il codice ha il formato REHAPP-XXXX-XXXX, senza caratteri ambigui', () => {
+  it('il codice ha il formato REHUB-XXXX-XXXX, senza caratteri ambigui', () => {
     const codice = generaCodice();
-    expect(codice).toMatch(/^REHAPP-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+    expect(codice).toMatch(/^REHUB-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
   });
 
   it('confronta le gemme arrotondate per difetto, come la barra in alto', () => {

@@ -15,6 +15,8 @@ import { ErroreNegozio, riscatta } from '../domain/negozio.js';
 import { giorniDiAssenza, notifiche, silenzio } from '../domain/notifiche.js';
 import { avanzaFase, classificaGiorno, faseCorrente, finalizzaGiornata } from '../domain/scoring.js';
 import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costanti.js';
+import { CREDENZIALI } from '../data/seed/credenziali.js';
+import { save } from '../data/store.js';
 import type { Diario, EsercizioPianoCreato, FarmacoPianoCreato, IdBlocco, PianoCreato, Voucher } from '../domain/types.js';
 import { nonPossibile, richiestaNonValida } from './errori.js';
 import { aggiorna, statoCorrente } from './servizio.js';
@@ -48,6 +50,29 @@ function rotta(gestore: (req: Request) => Promise<unknown>) {
 rotte.get(
   '/state',
   rotta(async () => componiStato(await statoCorrente())),
+);
+
+/**
+ * POST /api/login — `{ username, password }`.
+ *
+ * Checked against the hardcoded demo credentials (see `data/seed/credenziali`).
+ * Every login re-seeds the shared state from that account's fixed starting
+ * point, so the result is always the same regardless of which account logged
+ * in before it.
+ */
+rotte.post(
+  '/login',
+  rotta(async (req) => {
+    const { username, password } = corpo(req) as { username?: unknown; password?: unknown };
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      throw richiestaNonValida('Servono username e password.');
+    }
+    const credenziale = CREDENZIALI[username.trim().toLowerCase()];
+    if (!credenziale || credenziale.password !== password) {
+      throw richiestaNonValida('Credenziali non valide.');
+    }
+    return componiStato(await save(credenziale.carica()));
+  }),
 );
 
 /**

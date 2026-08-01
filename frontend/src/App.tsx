@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { RispostaStato } from '@backend/domain/types';
-import { getState } from './api';
+import { login } from './api';
 import BottomNav from './components/BottomNav';
 import LoginView from './views/LoginView';
 import HomeView from './views/HomeView';
@@ -15,8 +15,8 @@ export default function App() {
   const [view, setView] = useState<View>('login');
   const [stato, setStato] = useState<RispostaStato | null>(null);
 
-  const handleLogin = async () => {
-    const s = await getState();
+  const handleLogin = async (username: string, password: string) => {
+    const s = await login(username, password);
     setStato(s);
     setView('main');
   };

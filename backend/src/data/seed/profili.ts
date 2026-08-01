@@ -18,12 +18,14 @@ import { aggiungiGiorni, giornataLogica } from '../../domain/tempo.js';
 import type { DataISO, DatiPersistiti, StatoUtente } from '../../domain/types.js';
 import { creaPianoMarco } from './piano-marco.js';
 
-export type NomeProfilo = 'nuovo' | 'avanzato' | 'soglia';
+export type NomeProfilo = 'nuovo' | 'avanzato' | 'soglia' | 'vetrina' | 'settimana';
 
 export const PROFILI: Record<NomeProfilo, string> = {
   nuovo: 'Primo accesso: giorno 1, tutto a zero',
   avanzato: 'Giorno 40, streak lungo, calendario e grafico pieni',
   soglia: 'A una giornata dal level-up, per far accadere il momento clou a comando',
+  vetrina: 'Fase 3 raggiunta: entrambi i benefit sbloccati, streak lungo, per presentazioni',
+  settimana: 'Giorno 8, i primi 7 giorni pieni: stessi numeri del fixture, ma con storico vero',
 };
 
 /** What the user did on a simulated day. */
@@ -126,5 +128,27 @@ export function creaProfilo(nome: NomeProfilo, adesso: Date = new Date()): DatiP
      */
     case 'soglia':
       return simula(14, () => 'pieno', doloreRealistico, adesso);
+
+    /**
+     * Fifty days, day one incomplete for the same reason as `avanzato`. Crosses
+     * both phase boundaries (day 42 closes phase 2) and lands eight days into
+     * phase 3: 42 full days, x3.05, both in-app benefits unlocked
+     * (`grafico-dolore` at phase >= 2, `calendario-heatmap` at phase >= 3) —
+     * for demos that need to show those two screens without narrating a
+     * level-up first.
+     */
+    case 'vetrina':
+      return simula(50, (i) => (i === 0 ? 'parziale' : 'pieno'), doloreRealistico, adesso);
+
+    /**
+     * Seven full days, all in phase one. Reproduces `fixture.ts`'s numbers
+     * exactly — 154 RP, 177.1 gems, streak 7, x1.30 — because `simula` runs
+     * the same day-close math the fixture's numbers were hand-copied from.
+     * Unlike the fixture, `storico` actually gets the seven entries, so the
+     * mini calendar on the home screen has real days to colour in instead of
+     * just today.
+     */
+    case 'settimana':
+      return simula(7, () => 'pieno', doloreRealistico, adesso);
   }
 }

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { RispostaStato } from '@backend/domain/types';
-import { advancePhase } from '../api';
+import { advancePhase, getHistory } from '../api';
 import type { View } from '../App';
 
 interface Props {
@@ -17,7 +17,18 @@ const QUOTES = [
   'Your body heals faster than you think.',
 ];
 
-function buildCalendar(dataISO: string) {
+function toISODate(dt: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+}
+
+/**
+ * Bright blue for a completed day (today included, once its checklist is
+ * done), light blue for today while it's still in progress, white for
+ * everything else — past misses and days yet to come both read as "not
+ * done", which is the point: the strip only highlights what's finished.
+ */
+function buildCalendar(dataISO: string, completedDates: Set<string>, oggiCompleto: boolean) {
   const [y, m, d] = dataISO.split('-').map(Number);
   const today = new Date(y, m - 1, d);
   const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -25,11 +36,13 @@ function buildCalendar(dataISO: string) {
     const dt = new Date(today);
     dt.setDate(today.getDate() + (i - 4));
     const isToday = i === 4;
+    const completo = isToday ? oggiCompleto : completedDates.has(toISODate(dt));
     return {
       label: labels[dt.getDay()],
       num: dt.getDate(),
-      bg: isToday ? '#4FA8E8' : '#FAFBF8',
-      color: isToday ? '#21281F' : '#6B7566',
+      bg: completo ? '#4FA8E8' : isToday ? '#EAF4FC' : '#FAFBF8',
+      color: completo ? '#21281F' : isToday ? '#1D74B8' : '#6B7566',
+      border: isToday ? '2px solid #1D74B8' : '2px solid transparent',
     };
   });
 }
@@ -45,6 +58,17 @@ const CARD: React.CSSProperties = {
 export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
   const { profilo, barra, fase, oggi, allerta } = stato;
   const [advancing, setAdvancing] = useState(false);
+  const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    // A manual day-close appends today to `storico` while `oggi.data` stays
+    // today until the next natural rollover, so the last-N window can include
+    // today itself. Over-fetch and match by exact date so the 4 real past
+    // days the strip needs are never pushed out by that overlap.
+    getHistory(8)
+      .then((h) => setCompletedDates(new Set(h.giorni.filter((g) => g.checklistCompleta).map((g) => g.data))))
+      .catch(() => { /* strip just shows today + upcoming */ });
+  }, [oggi.data]);
 
   const initials = profilo.nome
     .split(' ')
@@ -53,7 +77,7 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
     .toUpperCase()
     .slice(0, 2);
 
-  const calendarDays = buildCalendar(oggi.data);
+  const calendarDays = buildCalendar(oggi.data, completedDates, oggi.checklistCompleta);
   const quote = QUOTES[Math.floor(new Date(oggi.data).getTime() / 86400000) % QUOTES.length];
   const rpPct = fase.sogliaRp > 0 ? Math.min(100, Math.round((fase.rpProgresso / fase.sogliaRp) * 100)) : 0;
   const isRecovery = oggi.tipoGiorno === 'recupero';
@@ -136,7 +160,7 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
           width: 42, height: 42, borderRadius: '50%',
-          background: '#2E3A2E', color: '#fff',
+          background: profilo.colore, color: '#fff',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontWeight: 700, fontSize: 15, flexShrink: 0,
         }}>
@@ -173,8 +197,8 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
             onClick={handleAdvance}
             disabled={advancing}
             style={{
-              background: '#21281F',
-              color: '#fff',
+              background: '#4FA8E8',
+              color: '#21281F',
               border: 'none',
               borderRadius: 12,
               padding: '10px 16px',
@@ -198,7 +222,7 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
 
       {/* Mini calendar strip */}
       <div style={CARD}>
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+        <div className="no-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
           {calendarDays.map((d, i) => (
             <div
               key={i}
@@ -210,6 +234,7 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
                 padding: '9px 0',
                 background: d.bg,
                 color: d.color,
+                border: d.border,
                 fontWeight: 700,
               }}
             >
@@ -245,11 +270,11 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
       </div>
 
       {/* Motivation quote */}
-      <div style={{ background: '#2E3A2E', borderRadius: 24, padding: 22, color: '#fff' }}>
-        <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.6, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8 }}>
+      <div style={{ background: '#EAF4FC', border: '1px solid #C7E3F5', borderRadius: 24, padding: 22 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#1D74B8', opacity: 0.7, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8 }}>
           Today's motivation
         </div>
-        <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.4, fontStyle: 'italic' }}>
+        <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.4, fontStyle: 'italic', color: '#21281F' }}>
           "{quote}"
         </div>
       </div>
@@ -290,13 +315,13 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
             fontSize: 18,
             fontWeight: 600,
             letterSpacing: '-0.01em',
-            color: '#21281F',
+            color: '#FFFFFF',
             cursor: 'pointer',
             boxShadow: '0 10px 24px rgba(79,168,232,0.35)',
             textAlign: 'center',
           }}
         >
-          Start Daily Workout →
+          Start your routine →
         </button>
       )}
 

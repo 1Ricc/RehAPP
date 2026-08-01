@@ -24,8 +24,8 @@ export interface VoceCatalogo {
 export const CATALOGO: VoceCatalogo[] = [
   {
     id: 'borraccia',
-    nome: 'RehAPP Thermal Bottle',
-    partner: 'RehAPP',
+    nome: 'Rehub Thermal Bottle',
+    partner: 'Rehub',
     descrizione: 'First reward, reachable in two or three days',
     costo: 60,
     faseRichiesta: 1,

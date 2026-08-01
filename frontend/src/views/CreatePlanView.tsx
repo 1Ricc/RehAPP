@@ -97,7 +97,7 @@ export default function CreatePlanView({ onBack }: Props) {
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLookup = async () => {
-    // Accept either the bare code or a full URL like "rehapp.com/plan/abc123"
+    // Accept either the bare code or a full URL like "rehub.com/plan/abc123"
     const code = codeInput.trim().split('/').pop() ?? '';
     if (!code) return;
     setLookupLoading(true);
@@ -228,7 +228,7 @@ export default function CreatePlanView({ onBack }: Props) {
 
   const copyLink = () => {
     if (!savedPlan) return;
-    const link = `rehapp.com/plan/${savedPlan.shareId}`;
+    const link = `rehub.com/plan/${savedPlan.shareId}`;
     navigator.clipboard?.writeText(link).catch(() => {});
     setCopied(true);
     if (copyTimer.current) clearTimeout(copyTimer.current);
@@ -269,7 +269,7 @@ export default function CreatePlanView({ onBack }: Props) {
                   value={codeInput}
                   onChange={e => setCodeInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleLookup()}
-                  placeholder="Code or rehapp.com/plan/…"
+                  placeholder="Code or rehub.com/plan/…"
                   style={{
                     flex: 1,
                     border: '1.5px solid #E7EAE3',
@@ -335,8 +335,8 @@ export default function CreatePlanView({ onBack }: Props) {
                     onClick={() => applyPlan(lookupResult!)}
                     style={{
                       width: '100%',
-                      background: '#2E3A2E',
-                      color: '#fff',
+                      background: '#4FA8E8',
+                      color: '#21281F',
                       border: 'none',
                       borderRadius: 10,
                       padding: '11px',
@@ -696,13 +696,13 @@ export default function CreatePlanView({ onBack }: Props) {
               fontFamily: 'JetBrains Mono, monospace',
               wordBreak: 'break-all',
             }}>
-              rehapp.com/plan/{savedPlan.shareId}
+              rehub.com/plan/{savedPlan.shareId}
             </div>
             <button
               onClick={copyLink}
               style={{
-                background: '#2E3A2E',
-                color: '#fff',
+                background: '#4FA8E8',
+                color: '#21281F',
                 border: 'none',
                 borderRadius: 12,
                 padding: '12px 18px',

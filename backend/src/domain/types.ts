@@ -249,7 +249,7 @@ export interface Voucher {
   ricompensaId: string;
   nome: string;
   partner: string;
-  /** `REHAPP-7K2M-9XQ4`. */
+  /** `REHUB-7K2M-9XQ4`. */
   codice: string;
   gemmeSpese: number;
   riscattatoIl: string;

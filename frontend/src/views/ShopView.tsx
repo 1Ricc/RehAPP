@@ -62,14 +62,14 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
             <circle cx="12" cy="12" r="9" fill="none" stroke="#C9A227" strokeWidth="2" />
             <path d="M12 7v5l3.5 2" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          {gems} pts
+          {gems} gems
         </div>
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
 
         {toast && (
-          <div style={{ background: '#21281F', color: '#fff', borderRadius: 14, padding: '12px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
+          <div style={{ background: '#4FA8E8', color: '#21281F', borderRadius: 14, padding: '12px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
             {toast}
           </div>
         )}
@@ -97,7 +97,7 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
             </div>
             <button
               onClick={() => setRedeemedVoucher(null)}
-              style={{ width: '100%', background: '#2E3A2E', color: '#fff', border: 'none', borderRadius: 12, padding: '12px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              style={{ width: '100%', background: '#4FA8E8', color: '#21281F', border: 'none', borderRadius: 12, padding: '12px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
             >
               Done
             </button>
@@ -156,7 +156,8 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
                   <div
                     key={item.id}
                     style={{
-                      background: isLocked ? '#F8F9F6' : '#2E3A2E',
+                      background: isLocked ? '#F8F9F6' : '#EAF4FC',
+                      border: `1px solid ${isLocked ? '#EEF0EA' : '#C7E3F5'}`,
                       borderRadius: 20,
                       padding: 16,
                       display: 'flex',
@@ -167,28 +168,28 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
                     <div style={{
                       width: 38, height: 38,
                       borderRadius: 12,
-                      background: isLocked ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.1)',
+                      background: '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
                     }}>
                       <svg width="18" height="18" viewBox="0 0 24 24">
-                        <rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke={isLocked ? '#B3BAA9' : '#FFFFFF'} strokeWidth="2" />
-                        <path d="M3 10h18M8 6v4M16 6v4" fill="none" stroke={isLocked ? '#B3BAA9' : '#FFFFFF'} strokeWidth="2" />
+                        <rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke={isLocked ? '#B3BAA9' : '#1D74B8'} strokeWidth="2" />
+                        <path d="M3 10h18M8 6v4M16 6v4" fill="none" stroke={isLocked ? '#B3BAA9' : '#1D74B8'} strokeWidth="2" />
                       </svg>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: isLocked ? '#21281F' : '#FFFFFF' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#21281F' }}>
                         {item.nome}
                       </div>
-                      <div style={{ fontSize: 12.5, color: isLocked ? '#8A9485' : 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+                      <div style={{ fontSize: 12.5, color: '#6B7566', marginTop: 2 }}>
                         {item.partner} · {item.descrizione}
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: isLocked ? '#8A9485' : '#4FA8E8', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: isLocked ? '#8A9485' : '#1D74B8', marginTop: 4 }}>
                         {isLocked
                           ? `Unlocks at phase ${item.faseRichiesta}`
-                          : `${item.costo} pts${item.gemmeMancanti > 0 ? ` · need ${item.gemmeMancanti} more` : ''}`}
+                          : `${item.costo} gems${item.gemmeMancanti > 0 ? ` · need ${item.gemmeMancanti} more` : ''}`}
                       </div>
                     </div>
                     <button
@@ -196,9 +197,9 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
                       disabled={isLocked || !canAfford || isBuying}
                       style={{
                         flexShrink: 0,
-                        background: isLocked || !canAfford ? (isLocked ? '#EEF1E8' : 'rgba(255,255,255,0.1)') : '#4FA8E8',
-                        color: isLocked ? '#8A9485' : (!canAfford ? 'rgba(255,255,255,0.4)' : '#21281F'),
-                        border: 'none',
+                        background: !isLocked && canAfford ? '#4FA8E8' : '#FFFFFF',
+                        color: isLocked ? '#8A9485' : (!canAfford ? '#B3BAA9' : '#21281F'),
+                        border: !isLocked && canAfford ? 'none' : '1px solid #E1E4DD',
                         borderRadius: 12,
                         padding: '10px 14px',
                         fontSize: 12,

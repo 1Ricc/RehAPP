@@ -1,5 +1,5 @@
 /**
- * Rehapp backend. One monolith, one hardcoded user, no auth: the brief allows it
+ * Rehub backend. One monolith, one hardcoded user, no auth: the brief allows it
  * and 24 hours do not.
  */
 
@@ -70,7 +70,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 await load();
 
 app.listen(PORTA, HOST, () => {
-  console.log(`Rehapp backend su http://localhost:${PORTA}`);
+  console.log(`Rehub backend su http://localhost:${PORTA}`);
   for (const ip of indirizziLan()) {
     console.log(`  dal telefono:   http://${ip}:${PORTA}`);
   }

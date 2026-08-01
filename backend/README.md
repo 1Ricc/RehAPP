@@ -1,4 +1,4 @@
-# Rehapp — backend
+# Rehub — backend
 
 Due comandi.
 
@@ -10,7 +10,7 @@ npm run dev
 Il server parte su `0.0.0.0:3001` e stampa all'avvio l'indirizzo da puntare dal telefono:
 
 ```
-Rehapp backend su http://localhost:3001
+Rehub backend su http://localhost:3001
   dal telefono:   http://10.100.1.128:3001
   stato:          .../backend/data/state.json
 ```

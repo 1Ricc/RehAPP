@@ -28,6 +28,12 @@ async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
 export const getState = (): Promise<RispostaStato> =>
   fetchJSON('/state');
 
+export const login = (username: string, password: string): Promise<RispostaStato> =>
+  fetchJSON('/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+
 export const toggleTask = (blocco: IdBlocco, voceId: string, fatto: boolean): Promise<RispostaStato> =>
   fetchJSON('/tasks/toggle', {
     method: 'POST',

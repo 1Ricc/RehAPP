@@ -118,7 +118,7 @@ export default function ProfileView({ stato }: Props) {
                 {barra.streakGiorni}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#C9A227' }}>
-                {barra.gemme} pts
+                {barra.gemme} gems
               </div>
             </div>
           </div>
@@ -372,7 +372,7 @@ export default function ProfileView({ stato }: Props) {
                           marginTop: 4,
                           letterSpacing: '0.04em',
                         }}>
-                          rehapp.com/plan/{p.shareId}
+                          rehub.com/plan/{p.shareId}
                         </div>
                       </div>
                     )}
@@ -397,7 +397,7 @@ export default function ProfileView({ stato }: Props) {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#21281F' }}>{v.nome}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#C9A227' }}>−{v.gemmeSpese} pts</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#C9A227' }}>−{v.gemmeSpese} gems</div>
                   </div>
                   <div style={{ fontSize: 12, color: '#8A9485', marginBottom: 8 }}>{v.partner} · {v.riscattatoIl}</div>
                   <div style={{

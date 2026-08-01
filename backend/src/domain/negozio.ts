@@ -58,7 +58,7 @@ export function prossimaRicompensa(elenco: Ricompensa[]): Ricompensa | null {
   return candidate.reduce((vicina, r) => (r.gemmeMancanti < vicina.gemmeMancanti ? r : vicina));
 }
 
-/** `REHAPP-7K2M-9XQ4`. Mock: nothing is sent anywhere, nothing is validated. */
+/** `REHUB-7K2M-9XQ4`. Mock: nothing is sent anywhere, nothing is validated. */
 export function generaCodice(): string {
   const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I, O, 0, 1: unreadable aloud
   const gruppo = () =>
@@ -66,7 +66,7 @@ export function generaCodice(): string {
       { length: 4 },
       () => alfabeto[Math.floor(Math.random() * alfabeto.length)] as string,
     ).join('');
-  return `REHAPP-${gruppo()}-${gruppo()}`;
+  return `REHUB-${gruppo()}-${gruppo()}`;
 }
 
 export class ErroreNegozio extends Error {}
