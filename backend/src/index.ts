@@ -8,6 +8,7 @@ import { networkInterfaces } from 'node:os';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 
+import { rotteDemo } from './api/demo.js';
 import { ErroreApi } from './api/errori.js';
 import { rotte } from './api/rotte.js';
 import { load, percorsoStato } from './data/store.js';
@@ -27,6 +28,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api', rotte);
+app.use('/api/demo', rotteDemo);
 
 app.use((_req, res) => {
   const errore: RispostaErrore = {
