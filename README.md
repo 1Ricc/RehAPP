@@ -1,4 +1,4 @@
-# RehAPP
+# Rehub
 
 A rehabilitation companion for physiotherapy patients — a daily checklist, a pain
 diary and a progression engine that turns clinical adherence into visible
@@ -21,7 +21,7 @@ but the programme still has two months to run. There is no feedback loop between
 
 ### What this project does
 
-RehAPP closes that loop. The patient gets one screen per day with what has to be
+Rehub closes that loop. The patient gets one screen per day with what has to be
 done, a pain score to log, and a progression system that responds to both. The
 core design decision is that **the reward system must never punish clinically
 correct behaviour**:
