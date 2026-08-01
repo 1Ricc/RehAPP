@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { RispostaStato, RispostaStorico, RispostaBadge, RispostaVoucher } from '@backend/domain/types';
-import { getHistory, getBadges, getVouchers } from '../api';
+import type { RispostaStato, RispostaStorico, RispostaBadge, RispostaVoucher, RispostaPiani, PianoCreato } from '@backend/domain/types';
+import { getHistory, getBadges, getVouchers, getPlans } from '../api';
 import PainChart from '../components/PainChart';
 import Heatmap from '../components/Heatmap';
 
@@ -52,6 +52,8 @@ export default function ProfileView({ stato }: Props) {
   const [history, setHistory] = useState<RispostaStorico | null>(null);
   const [badges, setBadges] = useState<RispostaBadge | null>(null);
   const [vouchers, setVouchers] = useState<RispostaVoucher | null>(null);
+  const [plans, setPlans] = useState<RispostaPiani | null>(null);
+  const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('week');
 
   const painBenefit = benefit.find(b => b.id === 'grafico-dolore');
@@ -68,6 +70,7 @@ export default function ProfileView({ stato }: Props) {
     getHistory(400).then(setHistory).catch(() => {});
     getBadges().then(setBadges).catch(() => {});
     getVouchers().then(setVouchers).catch(() => {});
+    getPlans().then(setPlans).catch(() => {});
   }, []);
 
   const daysInRecovery = daysSince(paziente.dataIntervento);
@@ -80,7 +83,7 @@ export default function ProfileView({ stato }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
 
         {/* ── User card ── */}
         <div style={CARD}>
@@ -270,6 +273,115 @@ export default function ProfileView({ stato }: Props) {
             </>
           )}
         </div>
+
+        {/* ── Saved plans ── */}
+        {plans && plans.piani.length > 0 && (
+          <div style={CARD}>
+            <div style={SECTION_TITLE}>My Plans</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {plans.piani.map((p: PianoCreato) => {
+                const isOpen = expandedPlan === p.id;
+                return (
+                  <div key={p.id} style={{ borderRadius: 16, border: '1.5px solid #EEF0EA', overflow: 'hidden' }}>
+                    <button
+                      onClick={() => setExpandedPlan(isOpen ? null : p.id)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        background: isOpen ? '#F0F9FF' : '#FAFBF8',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#21281F' }}>
+                          {p.label || 'Unnamed plan'}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#8A9485', marginTop: 2 }}>
+                          {p.creatoIl} · {p.esercizi.length} exercise{p.esercizi.length !== 1 ? 's' : ''}
+                          {p.farmaci.length > 0 ? ` · ${p.farmaci.length} med${p.farmaci.length !== 1 ? 's' : ''}` : ''}
+                          {' · '}{p.settimane} week{p.settimane !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 16, color: '#8A9485', marginLeft: 8, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                        ›
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {/* Days */}
+                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const, marginTop: 10 }}>
+                          {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => {
+                            const on = p.giorni.includes(d);
+                            return (
+                              <div key={d} style={{
+                                padding: '5px 9px',
+                                borderRadius: 8,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                background: on ? '#EAF4FC' : '#F5F6F2',
+                                color: on ? '#1D74B8' : '#B3BAA9',
+                              }}>{d}</div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Exercises */}
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7566', marginTop: 4 }}>Exercises</div>
+                        {p.esercizi.map(e => (
+                          <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#21281F' }}>{e.nome}</div>
+                              <div style={{ fontSize: 11, color: '#8A9485' }}>{e.area}</div>
+                            </div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#4FA8E8', flexShrink: 0 }}>
+                              {e.serie}×{e.ripetizioni} · {e.frequenza}×/day
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Medications */}
+                        {p.farmaci.length > 0 && (
+                          <>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7566', marginTop: 4 }}>Medications</div>
+                            {p.farmaci.map((f, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: '#21281F' }}>{f.nome}</div>
+                                <div style={{ fontSize: 12, color: '#8A9485', textAlign: 'right' as const, flexShrink: 0 }}>
+                                  {f.orari.join(', ')}
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+
+                        {/* Share link */}
+                        <div style={{
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: '#1D74B8',
+                          background: '#EAF4FC',
+                          borderRadius: 8,
+                          padding: '7px 10px',
+                          marginTop: 4,
+                          letterSpacing: '0.04em',
+                        }}>
+                          rehapp.com/plan/{p.shareId}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Redeemed vouchers ── */}
         {vouchers && vouchers.voucher.length > 0 && (

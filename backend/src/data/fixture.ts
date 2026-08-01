@@ -62,5 +62,6 @@ export function datiIniziali(adesso: Date = new Date()): DatiPersistiti {
     },
     storico: [],
     voucher: [],
+    pianiCreati: [],
   };
 }

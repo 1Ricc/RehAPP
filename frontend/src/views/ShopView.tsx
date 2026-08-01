@@ -66,7 +66,7 @@ export default function ShopView({ stato, onStateUpdate }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
 
         {toast && (
           <div style={{ background: '#21281F', color: '#fff', borderRadius: 14, padding: '12px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>

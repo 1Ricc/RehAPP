@@ -15,7 +15,7 @@ import { ErroreNegozio, riscatta } from '../domain/negozio.js';
 import { giorniDiAssenza, notifiche, silenzio } from '../domain/notifiche.js';
 import { avanzaFase, faseCorrente } from '../domain/scoring.js';
 import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costanti.js';
-import type { Diario, IdBlocco, Voucher } from '../domain/types.js';
+import type { Diario, EsercizioPianoCreato, FarmacoPianoCreato, IdBlocco, PianoCreato, Voucher } from '../domain/types.js';
 import { nonPossibile, richiestaNonValida } from './errori.js';
 import { aggiorna, statoCorrente } from './servizio.js';
 import {
@@ -250,6 +250,78 @@ rotte.post(
       }
     });
     return { voucher: emesso, stato: componiStato(dati) };
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// User-created plans
+// ---------------------------------------------------------------------------
+
+/** GET /api/plans/:shareId — look up a single plan by its share code. */
+rotte.get(
+  '/plans/:shareId',
+  rotta(async (req) => {
+    const shareId = (req.params['shareId'] ?? '').trim();
+    const dati = await statoCorrente();
+    const piano = (dati.pianiCreati ?? []).find((p) => p.shareId === shareId);
+    if (!piano) throw richiestaNonValida(`No plan found with code "${shareId}".`);
+    return piano;
+  }),
+);
+
+/** GET /api/plans — all plans the user has built, newest first. */
+rotte.get(
+  '/plans',
+  rotta(async () => {
+    const dati = await statoCorrente();
+    return { piani: dati.pianiCreati ?? [] };
+  }),
+);
+
+/**
+ * POST /api/plans — saves a new plan.
+ *
+ * The share ID is generated server-side so it is guaranteed unique within this
+ * user's data. The plan is prepended so GET /api/plans always returns newest first.
+ */
+rotte.post(
+  '/plans',
+  rotta(async (req) => {
+    const body = corpo(req) as {
+      label?: unknown;
+      giorni?: unknown;
+      settimane?: unknown;
+      esercizi?: unknown;
+      farmaci?: unknown;
+    };
+
+    if (!Array.isArray(body.giorni) || body.giorni.length === 0) {
+      throw richiestaNonValida('Seleziona almeno un giorno della settimana.');
+    }
+    if (!Array.isArray(body.esercizi) || body.esercizi.length === 0) {
+      throw richiestaNonValida('Seleziona almeno un esercizio.');
+    }
+    if (typeof body.settimane !== 'number' || body.settimane < 1) {
+      throw richiestaNonValida('La durata deve essere almeno 1 settimana.');
+    }
+
+    const piano: PianoCreato = {
+      id: crypto.randomUUID(),
+      shareId: Math.random().toString(36).slice(2, 8),
+      label: typeof body.label === 'string' ? body.label.trim() : '',
+      creatoIl: new Date().toISOString().slice(0, 10),
+      giorni: body.giorni as string[],
+      settimane: body.settimane,
+      esercizi: body.esercizi as EsercizioPianoCreato[],
+      farmaci: Array.isArray(body.farmaci) ? (body.farmaci as FarmacoPianoCreato[]) : [],
+    };
+
+    await aggiorna((dati) => ({
+      ...dati,
+      pianiCreati: [piano, ...(dati.pianiCreati ?? [])],
+    }));
+
+    return piano;
   }),
 );
 

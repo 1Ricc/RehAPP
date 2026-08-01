@@ -275,7 +275,7 @@ export default function WorkoutView({ stato, onStateUpdate }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
 
         {/* Progress bar */}
         <div style={CARD}>

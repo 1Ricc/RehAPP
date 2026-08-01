@@ -233,6 +233,8 @@ export interface DatiPersistiti {
   giornoCorrente: GiornoCorrente;
   storico: GiornoStorico[];
   voucher: Voucher[];
+  /** Plans created by the user on the Create a Plan screen. Newest first. */
+  pianiCreati?: PianoCreato[];
 }
 
 /**
@@ -412,6 +414,40 @@ export interface RispostaNegozio {
 /** GET /api/vouchers — newest first. */
 export interface RispostaVoucher {
   voucher: Voucher[];
+}
+
+// ---------------------------------------------------------------------------
+// User-created plans (Create a Plan screen)
+// ---------------------------------------------------------------------------
+
+export interface EsercizioPianoCreato {
+  id: string;
+  nome: string;
+  area: string;
+  serie: number;
+  ripetizioni: number;
+  frequenza: number;
+}
+
+export interface FarmacoPianoCreato {
+  nome: string;
+  giorni: string[];
+  orari: string[];
+}
+
+export interface PianoCreato {
+  id: string;
+  shareId: string;
+  label: string;
+  creatoIl: string;
+  giorni: string[];
+  settimane: number;
+  esercizi: EsercizioPianoCreato[];
+  farmaci: FarmacoPianoCreato[];
+}
+
+export interface RispostaPiani {
+  piani: PianoCreato[];
 }
 
 // ---------------------------------------------------------------------------

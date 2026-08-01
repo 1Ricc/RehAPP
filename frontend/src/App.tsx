@@ -31,25 +31,26 @@ export default function App() {
       case 'workout': return <WorkoutView stato={stato} onStateUpdate={updateStato} />;
       case 'profile': return <ProfileView stato={stato} />;
       case 'shop':    return <ShopView stato={stato} onStateUpdate={updateStato} />;
-      case 'create':  return <CreatePlanView />;
+      case 'create':  return <CreatePlanView onBack={() => setView('main')} />;
       default:        return null;
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', display: 'flex', justifyContent: 'center', background: '#EDEFEA' }}>
+    <div style={{ height: '100vh', width: '100%', display: 'flex', justifyContent: 'center', background: '#EDEFEA' }}>
       <div style={{
         width: '100%',
         maxWidth: 430,
-        minHeight: '100vh',
+        height: '100vh',
         background: '#FFFFFF',
         position: 'relative',
         boxShadow: '0 0 40px rgba(0,0,0,0.06)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}>
         {content()}
-        {view !== 'login' && stato && (
+        {view !== 'login' && view !== 'create' && stato && (
           <BottomNav active={view} onNavigate={setView} />
         )}
       </div>

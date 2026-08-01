@@ -4,6 +4,10 @@ import type {
   RispostaNegozio,
   RispostaBadge,
   RispostaVoucher,
+  RispostaPiani,
+  PianoCreato,
+  EsercizioPianoCreato,
+  FarmacoPianoCreato,
   RispostaErrore,
   IdBlocco,
   Voucher,
@@ -59,3 +63,20 @@ export const getBadges = (): Promise<RispostaBadge> =>
 
 export const getVouchers = (): Promise<RispostaVoucher> =>
   fetchJSON('/vouchers');
+
+export const getPlans = (): Promise<RispostaPiani> =>
+  fetchJSON('/plans');
+
+export const lookupPlan = (shareId: string): Promise<PianoCreato> =>
+  fetchJSON(`/plans/${encodeURIComponent(shareId)}`);
+
+export const createPlan = (payload: {
+  label: string;
+  giorni: string[];
+  settimane: number;
+  esercizi: EsercizioPianoCreato[];
+  farmaci: FarmacoPianoCreato[];
+}): Promise<PianoCreato> =>
+  fetchJSON('/plans', { method: 'POST', body: JSON.stringify(payload) });
+
+export type { EsercizioPianoCreato, FarmacoPianoCreato };
