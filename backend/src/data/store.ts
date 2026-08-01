@@ -1,17 +1,25 @@
 /**
- * Persistence: one JSON file, one user. SQLite would be a dependency to manage
- * a single row.
+ * Persistence: SQLite, one table, one row, one user.
  *
- * Two guarantees, and nothing more:
- *  - atomic writes: temp file in the same directory, fsync, rename. A crash
- *    mid-write leaves the previous state intact, never a truncated file
- *  - serialized writes: concurrent save() calls queue up, so two requests
- *    ticking two items cannot interleave into a lost update
+ * The state is stored as a JSON blob in a single row. Normalising into
+ * relational tables would mean teaching the ORM the whole domain model for
+ * zero query benefit — nothing here filters or joins; it always loads the
+ * whole state and replaces the whole state.
+ *
+ * Two properties the file-based version had to work hard for come for free:
+ *  - atomic writes: SQLite transactions are atomic by definition
+ *  - serialised writes: better-sqlite3 is synchronous, so two writes cannot
+ *    interleave inside the same process
+ *
+ * WAL mode is on so readers do not block writers and vice-versa. NORMAL
+ * synchronous survives an OS crash (the WAL is replayed) while being fast
+ * enough that a restart is not a demo-day risk.
  */
 
+import Database from 'better-sqlite3';
+import { existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdir, open, readFile, rename, writeFile } from 'node:fs/promises';
 
 import { VERSIONE_STATO } from '../domain/costanti.js';
 import type { DatiPersistiti } from '../domain/types.js';
@@ -19,120 +27,109 @@ import { datiIniziali } from './fixture.js';
 
 const RADICE = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CARTELLA_DATI = join(RADICE, 'data');
-const FILE_STATO = join(CARTELLA_DATI, 'state.json');
+const DB_PATH = join(CARTELLA_DATI, 'state.db');
+const JSON_PATH = join(CARTELLA_DATI, 'state.json');
 
-/** Everything goes through here, so the file is read from disk once. */
+let db: Database.Database | null = null;
 let cache: DatiPersistiti | null = null;
 
-/** Tail of the write queue. Every save() appends to it. */
-let coda: Promise<void> = Promise.resolve();
+function getDb(): Database.Database {
+  if (db) return db;
+  mkdirSync(CARTELLA_DATI, { recursive: true });
+  db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS stato (
+      id      INTEGER PRIMARY KEY CHECK (id = 1),
+      versione INTEGER NOT NULL,
+      dati    TEXT    NOT NULL
+    )
+  `);
+  return db;
+}
 
 export function percorsoStato(): string {
-  return FILE_STATO;
+  return DB_PATH;
 }
 
 /**
- * Current state. On first run — or after the file is deleted, which is how the
- * demo gets reset — it seeds from the fixture and writes it out.
+ * Loads the state. On the first call after install the table is empty, so we
+ * try to migrate from state.json before falling back to a fresh fixture.
  */
 export async function load(): Promise<DatiPersistiti> {
   if (cache) return cache;
 
-  const grezzo = await leggiFile();
-  if (grezzo === null) {
-    return inizializza();
+  const database = getDb();
+  const row = database
+    .prepare<[], { versione: number; dati: string }>('SELECT versione, dati FROM stato WHERE id = 1')
+    .get();
+
+  if (!row) return inizializza(database);
+
+  if (row.versione !== VERSIONE_STATO) {
+    // Shape changed under an existing DB — clear the row and start fresh.
+    database.prepare('DELETE FROM stato WHERE id = 1').run();
+    console.warn('[store] versione stato cambiata, riparto dal fixture');
+    return inizializza(database);
   }
 
-  let dati: DatiPersistiti;
-  try {
-    dati = JSON.parse(grezzo) as DatiPersistiti;
-  } catch {
-    // A corrupted file must not take the server down 10 minutes before the demo.
-    await archivia('corrotto');
-    return inizializza();
-  }
-
-  if (dati.versione !== VERSIONE_STATO) {
-    // The shape changed under an old file. Keep the old one aside and start over.
-    await archivia(`v${dati.versione}`);
-    return inizializza();
-  }
-
-  cache = dati;
-  return dati;
+  cache = JSON.parse(row.dati) as DatiPersistiti;
+  return cache;
 }
 
-/** Writes the whole state and updates the cache. Callers pass the full object. */
 export async function save(dati: DatiPersistiti): Promise<DatiPersistiti> {
   cache = dati;
-  coda = coda
-    .then(() => scriviAtomico(dati))
-    .catch((errore) => {
-      // Swallowing this silently is the worst case on demo day: the cache is
-      // already updated, so the API keeps answering correctly while nothing
-      // reaches the disk, and a restart loses everything. The queue still has to
-      // survive the failure, hence the catch stays — it just stops being mute.
-      console.error('[store] scrittura di state.json fallita:', errore);
-    });
-  await coda;
+  upsert(getDb(), dati);
   return dati;
 }
 
-/** Drops the file and the cache, then reseeds. Used by /api/demo/reset later on. */
 export async function reset(adesso: Date = new Date()): Promise<DatiPersistiti> {
   cache = null;
-  return inizializza(adesso);
+  const database = getDb();
+  database.prepare('DELETE FROM stato WHERE id = 1').run();
+  return inizializza(database, adesso);
 }
 
-async function inizializza(adesso: Date = new Date()): Promise<DatiPersistiti> {
-  const dati = datiIniziali(adesso);
-  cache = dati;
-  await save(dati);
-  return dati;
-}
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
 
-async function leggiFile(): Promise<string | null> {
-  try {
-    return await readFile(FILE_STATO, 'utf8');
-  } catch (errore) {
-    if (codice(errore) === 'ENOENT') return null;
-    throw errore;
-  }
-}
-
-/** Moves a file we refuse to read out of the way instead of deleting it. */
-async function archivia(motivo: string): Promise<void> {
-  const destinazione = `${FILE_STATO}.${motivo}.bak`;
-  try {
-    await rename(FILE_STATO, destinazione);
-    console.warn(`[store] state.json ${motivo}: spostato in ${destinazione}, riparto dal fixture`);
-  } catch {
-    console.warn(`[store] state.json ${motivo}: non archiviabile, riparto dal fixture`);
-  }
+function upsert(database: Database.Database, dati: DatiPersistiti): void {
+  database
+    .prepare<[number, string]>(`
+      INSERT INTO stato (id, versione, dati) VALUES (1, ?, ?)
+      ON CONFLICT (id) DO UPDATE SET versione = excluded.versione, dati = excluded.dati
+    `)
+    .run(dati.versione, JSON.stringify(dati));
 }
 
 /**
- * Temp file, fsync, rename. The rename is atomic on the same filesystem, so a
- * reader never sees a half-written file.
+ * Seeds from the fixture, but first tries to migrate a state.json left over
+ * from the file-based version — that way the demo history survives the upgrade.
  */
-async function scriviAtomico(dati: DatiPersistiti): Promise<void> {
-  await mkdir(CARTELLA_DATI, { recursive: true });
-  const temporaneo = `${FILE_STATO}.${process.pid}.tmp`;
-  await writeFile(temporaneo, JSON.stringify(dati, null, 2), 'utf8');
+function inizializza(database: Database.Database, adesso: Date = new Date()): DatiPersistiti {
+  const migrated = tentaMigrazioneJson(database);
+  if (migrated) return migrated;
 
-  // Without the fsync the rename can land before the bytes do.
-  const handle = await open(temporaneo, 'r');
-  try {
-    await handle.sync();
-  } finally {
-    await handle.close();
-  }
-
-  await rename(temporaneo, FILE_STATO);
+  const dati = datiIniziali(adesso);
+  cache = dati;
+  upsert(database, dati);
+  return dati;
 }
 
-function codice(errore: unknown): string | undefined {
-  return typeof errore === 'object' && errore !== null && 'code' in errore
-    ? String((errore as { code: unknown }).code)
-    : undefined;
+function tentaMigrazioneJson(database: Database.Database): DatiPersistiti | null {
+  if (!existsSync(JSON_PATH)) return null;
+  try {
+    const raw = readFileSync(JSON_PATH, 'utf8');
+    const dati = JSON.parse(raw) as DatiPersistiti;
+    if (dati.versione !== VERSIONE_STATO) return null;
+    upsert(database, dati);
+    renameSync(JSON_PATH, `${JSON_PATH}.migrated.bak`);
+    console.log('[store] state.json migrato in state.db');
+    cache = dati;
+    return dati;
+  } catch {
+    return null;
+  }
 }
