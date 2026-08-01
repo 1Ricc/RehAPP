@@ -438,7 +438,7 @@ describe('negozio e voucher', () => {
     expect(dopo.stato.gemmePortafoglio).toBe(100);
     expect(dopo.voucher).toHaveLength(1);
     expect(dopo.voucher[0]!.gemmeSpese).toBe(200);
-    expect(dopo.voucher[0]!.partner).toBe('Farmacia Centrale');
+    expect(dopo.voucher[0]!.partner).toBe('Central Pharmacy');
   });
 
   it('una ricompensa non ripetibile si prende una volta sola', () => {

@@ -2,6 +2,7 @@
 *.md
 # Eccezione: le istruzioni di avvio devono stare nel repo, altrimenti chi clona
 # non sa come far partire il backend il giorno della demo.
+!README.md
 !backend/README.md
 !ARCHITECTURE.md
 
