@@ -303,6 +303,8 @@ export interface CardFase {
   /** Projection shown as "fine fase prevista il …"; a recovery day slides it. */
   fineFasePrevista: DataISO;
   avanzamentoDisponibile: boolean;
+  /** Clinical precautions for this phase, shown on the profile screen. */
+  precauzioni: string[];
 }
 
 export interface Allerta {

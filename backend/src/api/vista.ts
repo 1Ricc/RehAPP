@@ -78,6 +78,7 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
       Math.max(fase.durataGiorniStimata - stato.giorniFaseTrascorsi, 0),
     ),
     avanzamentoDisponibile: stato.avanzamentoDisponibile,
+    precauzioni: fase.precauzioni,
   };
 
   const colore = coloreProfilo(stato.faseRaggiunta);

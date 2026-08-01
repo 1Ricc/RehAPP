@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { RispostaStato, RispostaStorico } from '@backend/domain/types';
-import { getHistory } from '../api';
+import type { RispostaStato, RispostaStorico, RispostaBadge, RispostaVoucher } from '@backend/domain/types';
+import { getHistory, getBadges, getVouchers } from '../api';
 import PainChart from '../components/PainChart';
 import Heatmap from '../components/Heatmap';
 
@@ -18,19 +18,40 @@ const CARD: React.CSSProperties = {
   boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
 };
 
+const SECTION_TITLE: React.CSSProperties = {
+  fontFamily: 'Poppins, sans-serif',
+  fontSize: 16,
+  fontWeight: 600,
+  color: '#21281F',
+  marginBottom: 14,
+};
+
 const LOCK_NODE = (
   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 0', color: '#8A9485', fontSize: 13, fontWeight: 700 }}>
     <svg width="24" height="24" viewBox="0 0 24 24">
       <rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="#B3BAA9" strokeWidth="2" />
       <path d="M8 10V7a4 4 0 018 0v3" fill="none" stroke="#B3BAA9" strokeWidth="2" />
     </svg>
-    Unlock in the Shop 🔒
+    Unlock in the Shop
   </div>
 );
 
+function formatDate(iso: string): string {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function daysSince(iso: string): number {
+  const start = new Date(iso + 'T00:00:00').getTime();
+  return Math.floor((Date.now() - start) / 86_400_000);
+}
+
 export default function ProfileView({ stato }: Props) {
-  const { profilo, barra, benefit } = stato;
+  const { profilo, barra, benefit, fase, paziente } = stato;
+
   const [history, setHistory] = useState<RispostaStorico | null>(null);
+  const [badges, setBadges] = useState<RispostaBadge | null>(null);
+  const [vouchers, setVouchers] = useState<RispostaVoucher | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('week');
 
   const painBenefit = benefit.find(b => b.id === 'grafico-dolore');
@@ -44,10 +65,12 @@ export default function ProfileView({ stato }: Props) {
     .slice(0, 2);
 
   useEffect(() => {
-    getHistory(400)
-      .then(setHistory)
-      .catch(() => { /* non-blocking */ });
+    getHistory(400).then(setHistory).catch(() => {});
+    getBadges().then(setBadges).catch(() => {});
+    getVouchers().then(setVouchers).catch(() => {});
   }, []);
+
+  const daysInRecovery = daysSince(paziente.dataIntervento);
 
   return (
     <>
@@ -59,57 +82,138 @@ export default function ProfileView({ stato }: Props) {
 
       <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 100 }}>
 
-        {/* User card */}
+        {/* ── User card ── */}
         <div style={CARD}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-              <div style={{
-                width: 52, height: 52,
-                borderRadius: '50%',
-                background: '#2E3A2E',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: 17,
-                flexShrink: 0,
-              }}>
-                {initials}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{
+              width: 60, height: 60,
+              borderRadius: '50%',
+              background: profilo.colore,
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: 20,
+              flexShrink: 0,
+            }}>
+              {initials}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: profilo.colore, fontFamily: 'Poppins, sans-serif' }}>
+                {profilo.nome}
               </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: profilo.colore }}>{profilo.nome}</div>
-                <div style={{ fontSize: 13, color: '#8A9485' }}>
-                  Phase {stato.fase.numero} · {profilo.etichettaColore}
-                </div>
+              <div style={{ fontSize: 13, color: '#8A9485', marginTop: 2 }}>
+                Phase {fase.numero} of {fase.totaleFasi} · {profilo.etichettaColore}
               </div>
             </div>
-            {barra.streakGiorni >= 1 && (
-              <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 22, fontWeight: 700, color: '#1D74B8' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24">
-                    <path d="M12 21c-4 0-6-2.5-6-6 0-3 2-5 3-8 1 2 1 3 2 3 0-2-1-4 1-7 3 3 5 6 5 9a5 5 0 01-5 9z" fill="#1D74B8" />
-                  </svg>
-                  {barra.streakGiorni}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: '#C9A227' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9" fill="none" stroke="#C9A227" strokeWidth="2" />
-                    <path d="M12 7v5l3.5 2" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  {barra.gemme} pts
-                </div>
+            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 20, fontWeight: 700, color: '#1D74B8' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path d="M12 21c-4 0-6-2.5-6-6 0-3 2-5 3-8 1 2 1 3 2 3 0-2-1-4 1-7 3 3 5 6 5 9a5 5 0 01-5 9z" fill="#1D74B8" />
+                </svg>
+                {barra.streakGiorni}
               </div>
-            )}
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#C9A227' }}>
+                {barra.gemme} pts
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Pain chart */}
+        {/* ── Clinical info ── */}
+        <div style={CARD}>
+          <div style={SECTION_TITLE}>Clinical Info</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <InfoRow label="Condition" value={paziente.patologia} />
+            <InfoRow label="Surgery" value={formatDate(paziente.dataIntervento)} />
+            <InfoRow label="Age" value={`${paziente.eta} years`} />
+            <InfoRow label="Recovery started" value={`${daysInRecovery} day${daysInRecovery !== 1 ? 's' : ''} ago`} />
+            <div style={{ borderTop: '1px solid #EEF0EA', marginTop: 4, paddingTop: 10 }}>
+              <div style={{ fontSize: 12, color: '#8A9485', fontWeight: 600, marginBottom: 4 }}>Current goal</div>
+              <div style={{ fontSize: 13, color: '#21281F', lineHeight: 1.5 }}>{fase.obiettivo}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Stats row ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          <StatBox label="Total RP" value={barra.rpTotali.toLocaleString()} color="#4FA8E8" />
+          <StatBox label="Phase day" value={`${fase.giorniTrascorsi}`} color="#21281F" />
+          <StatBox label="Multiplier" value={`×${barra.moltiplicatore.toFixed(2)}`} color="#C9A227" />
+        </div>
+
+        {/* ── Phase precautions ── */}
+        {fase.precauzioni.length > 0 && (
+          <div style={CARD}>
+            <div style={SECTION_TITLE}>Phase Precautions</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {fase.precauzioni.map((p, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{
+                    flexShrink: 0,
+                    width: 6, height: 6,
+                    borderRadius: '50%',
+                    background: '#F59E0B',
+                    marginTop: 6,
+                  }} />
+                  <div style={{ fontSize: 13.5, color: '#21281F', lineHeight: 1.5 }}>{p}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Badges ── */}
+        <div style={CARD}>
+          <div style={SECTION_TITLE}>Badges</div>
+          {badges ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {badges.badge.map(b => {
+                const pct = Math.min(Math.round((b.progresso / b.obiettivo) * 100), 100);
+                return (
+                  <div key={b.id} style={{
+                    padding: '12px 14px',
+                    borderRadius: 16,
+                    background: b.ottenuto ? '#F0F9FF' : '#FAFBF8',
+                    border: `1.5px solid ${b.ottenuto ? '#B8DCF2' : '#EEF0EA'}`,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {b.ottenuto ? (
+                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#4FA8E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="12" height="12" viewBox="0 0 20 20">
+                              <path d="M4 10l4 4 8-9" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#EEF0EA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#B3BAA9' }} />
+                          </div>
+                        )}
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#21281F' }}>{b.nome}</div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: b.ottenuto ? '#4FA8E8' : '#8A9485' }}>
+                        {b.progresso}/{b.obiettivo}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#8A9485', marginBottom: 8 }}>{b.descrizione}</div>
+                    <div style={{ width: '100%', height: 5, borderRadius: 999, background: '#EAF1F7' }}>
+                      <div style={{ height: '100%', borderRadius: 999, background: b.ottenuto ? '#4FA8E8' : '#B8DCF2', width: `${pct}%`, transition: 'width 0.4s ease' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '16px 0', color: '#8A9485', fontSize: 13 }}>Loading…</div>
+          )}
+        </div>
+
+        {/* ── Pain chart ── */}
         <div style={CARD}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: 16, fontWeight: 600, color: '#21281F' }}>
-              Perceived Pain
-            </div>
+            <div style={SECTION_TITLE}>Perceived Pain</div>
             {painBenefit?.sbloccato && (
               <select
                 value={timeframe}
@@ -143,11 +247,9 @@ export default function ProfileView({ stato }: Props) {
           )}
         </div>
 
-        {/* Annual heatmap */}
+        {/* ── Annual heatmap ── */}
         <div style={CARD}>
-          <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: 16, fontWeight: 600, color: '#21281F', marginBottom: 2 }}>
-            Annual Activity
-          </div>
+          <div style={SECTION_TITLE}>Annual Activity</div>
           {heatmapBenefit?.sbloccato ? (
             history ? (
               <>
@@ -169,7 +271,67 @@ export default function ProfileView({ stato }: Props) {
           )}
         </div>
 
+        {/* ── Redeemed vouchers ── */}
+        {vouchers && vouchers.voucher.length > 0 && (
+          <div style={CARD}>
+            <div style={SECTION_TITLE}>Redeemed Rewards</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {vouchers.voucher.map(v => (
+                <div key={v.id} style={{
+                  padding: '12px 14px',
+                  borderRadius: 16,
+                  background: '#FAFBF8',
+                  border: '1.5px solid #EEF0EA',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#21281F' }}>{v.nome}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#C9A227' }}>−{v.gemmeSpese} pts</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#8A9485', marginBottom: 8 }}>{v.partner} · {v.riscattatoIl}</div>
+                  <div style={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#1D74B8',
+                    background: '#EAF4FC',
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    letterSpacing: '0.08em',
+                  }}>
+                    {v.codice}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: '#8A9485', minWidth: 110, paddingTop: 1 }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#21281F', flex: 1 }}>{value}</div>
+    </div>
+  );
+}
+
+function StatBox({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #EEF0EA',
+      borderRadius: 20,
+      padding: '14px 12px',
+      textAlign: 'center',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+    }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color, fontFamily: 'Poppins, sans-serif' }}>{value}</div>
+      <div style={{ fontSize: 11, color: '#8A9485', fontWeight: 600, marginTop: 3 }}>{label}</div>
+    </div>
   );
 }

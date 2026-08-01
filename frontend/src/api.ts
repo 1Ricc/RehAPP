@@ -3,6 +3,7 @@ import type {
   RispostaStorico,
   RispostaNegozio,
   RispostaBadge,
+  RispostaVoucher,
   RispostaErrore,
   IdBlocco,
   Voucher,
@@ -55,3 +56,6 @@ export const redeemReward = (id: string): Promise<{ voucher: Voucher; stato: Ris
 
 export const getBadges = (): Promise<RispostaBadge> =>
   fetchJSON('/badges');
+
+export const getVouchers = (): Promise<RispostaVoucher> =>
+  fetchJSON('/vouchers');
