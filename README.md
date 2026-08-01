@@ -4,10 +4,6 @@ A rehabilitation companion for physiotherapy patients — a daily checklist, a p
 diary and a progression engine that turns clinical adherence into visible
 progress.
 
-Built as a hackathon project (24-hour build) around a single clinical case: Marco,
-34, twelve days after right-knee ACL reconstruction, on an 84-day four-phase
-rehab plan.
-
 ---
 
 ## 1. Project Scope
@@ -41,9 +37,8 @@ unfinished:
 
 | Out of scope | Why |
 |---|---|
-| Authentication | One hardcoded patient. The login screen is a button, not OAuth. |
-| Multi-user / multi-tenancy | Single-row database by design (`CHECK (id = 1)`). |
-| Physiotherapist-side app | The plan is seeded in code, not authored in-product. |
+| Physiotherapist-specifict accounts | PTs are treated as normal users for simplicity, but in reality they should be verified for a program to grant currency to avoid exploitation |
+| Singe use program links | Time constraints, complements the row presented above |
 | Variable exercise frequency | Every exercise is daily so phase thresholds stay computable as `days × daily RP`. Weekly frequency requires rewriting the scoring engine, not the data. |
 | Nutrition tracking | Present in the plan model as guidance text; never scored, never in the checklist. |
 | Real partner integrations | The reward catalogue uses invented local partners — a pharmacy, a rehab pool, a sports shop. |
@@ -90,7 +85,7 @@ unfinished:
 - **In-app benefits** — unlocked by clinical progress rather than by spending:
   the Pain Chart at phase 2, the Activity Calendar at phase 3.
 - **Profile colour** — one accent per phase reached, the cheapest visible avatar
-  progression.
+  progression while keeping complexity at a minimum.
 
 ### Visualisation & profile
 
@@ -108,16 +103,6 @@ A self-contained authoring tool, independent of the patient's own rehab plan:
 - Add medications with name, days and times.
 - Save it and get a **6-character share code** generated server-side.
 - Load someone else's plan by pasting the code or the full share URL.
-
-### Notification engine (backend)
-
-A pure engine exposed at `GET /api/notifications`, implemented but not yet wired
-into the UI. It computes a reminder queue with a hard cap of three per day, plus
-the explicit reason the app is currently silent. The quiet window is derived from
-the medication times in the active plan rather than hardcoded. Copy is picked
-deterministically from per-event variants, seeded on the notification id, so the
-wording varies between days but never flickers between two polls of the same
-event.
 
 ### Demo tooling
 
@@ -194,7 +179,7 @@ unit-tested and the HTTP layer does not need to be.
 **Full-state responses.** Every mutating endpoint returns the complete
 `RispostaStato`. The frontend never patches or diffs — it replaces its single
 state atom and redraws. This removes an entire class of client/server divergence
-bugs at the cost of slightly larger payloads, which is the correct trade at this
+bugs at the cost of slightly larger payloads, which is a wise trade at this
 scale.
 
 **One type file as the API contract.** The frontend imports domain types directly
@@ -242,8 +227,7 @@ flex items refuse to shrink below content size and the fixed nav gets obscured.
 
 The domain layer, its types and its identifiers are written in Italian
 (`scoring`, `negozio`, `notifiche`, `gemme`, `fase`); all user-facing strings in
-the UI are English. Comments explain *why* a decision was taken, not what the
-line does.
+the UI are English. 
 
 ---
 
@@ -317,6 +301,3 @@ Every mutating call returns the full state. Every error is a readable
 | GET | `/api/plans/:shareId` | Look up a plan by 6-character share code |
 | GET | `/api/notifications` | Notification queue + silence reason |
 | GET | `/api/health` | `{ ok: true }` |
-
-Full layer-by-layer detail, domain rules and design tokens are in
-[`ARCHITECTURE.md`](./ARCHITECTURE.md).
