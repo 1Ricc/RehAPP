@@ -42,6 +42,13 @@ export async function statoCorrente(adesso: Date = new Date()): Promise<DatiPers
 /**
  * Applies a change and saves. `muta` is pure: it gets the state and returns a
  * new one, exactly like the engine.
+ *
+ * **`muta` must stay synchronous**, and that is load-bearing. Read and write
+ * happen in one uninterrupted turn — the await resolves, `muta` runs, `save`
+ * updates the cache — so two requests arriving together cannot both read the
+ * old state and have one overwrite the other. Put an `await` inside `muta` and
+ * three quick ticks in a row start losing one, which is exactly the scenario
+ * the optimistic UI produces (TODO §5).
  */
 export async function aggiorna(
   muta: (dati: DatiPersistiti) => DatiPersistiti,

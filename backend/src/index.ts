@@ -45,6 +45,17 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     res.status(err.stato).json(errore);
     return;
   }
+  // Malformed JSON is the client's mistake, not a server bug. Left to the
+  // branch below it answers 500, which sends whoever is building the frontend
+  // hunting through server logs for a typo in their own fetch().
+  if (err instanceof SyntaxError && 'body' in err) {
+    const errore: RispostaErrore = {
+      errore: 'json-non-valido',
+      messaggio: 'Il corpo della richiesta non è JSON valido.',
+    };
+    res.status(400).json(errore);
+    return;
+  }
   // Anything else is a bug: it goes to the console in full, to the client short.
   console.error('[api]', err);
   const errore: RispostaErrore = {
