@@ -33,7 +33,13 @@ export interface Esercizio {
   nome: string;
   serie: number;
   ripetizioni: number;
-  /** FITT frequency: how many days a week the exercise is prescribed. */
+  /** Set on time-based work (bike, jogging) instead of reps. */
+  durataMinuti?: number;
+  /**
+   * FITT frequency. In the MVP it is always 7: the daily total has to be the
+   * same every day, otherwise the phase thresholds — days x daily RP — would
+   * depend on the weekday. See the note in seed/piano-marco.ts.
+   */
   frequenzaSettimanale: number;
   note?: string;
 }
@@ -46,9 +52,9 @@ export interface Farmaco {
 }
 
 /**
- * A clinical phase. Doubles as the game's level (README §5.1): the thresholds
- * are `durataGiorniStimata * (rpEsercizi + RP_FARMACI + RP_DIARIO)`, so the
- * numbers in this object are not free — see the oracle in CLAUDE.md.
+ * A clinical phase. Doubles as the game's level (README §5.1). The threshold is
+ * `durataGiorniStimata * (RP_ESERCIZI + drug block, if any + RP_DIARIO)`: the RP
+ * of a block never change, only which blocks the phase prescribes.
  */
 export interface Fase {
   /** 1-based, matches `faseRaggiunta` in StatoUtente. */
@@ -56,11 +62,13 @@ export interface Fase {
   nome: string;
   obiettivo: string;
   durataGiorniStimata: number;
-  /** Value of the whole exercise block: 16 / 20 / 24 / 16 depending on phase. */
-  rpEsercizi: number;
-  /** RP needed to leave this phase: 308 / 546 / 840 / 462. */
+  /**
+   * RP needed to leave this phase: `durataGiorniStimata` x the daily total.
+   * 308 / 462 / 504 / 378 — the last two are lower because from phase 3 the
+   * drug block is gone. Never typed by hand, always derived.
+   */
   sogliaRp: number;
-  /** Flat 20% of the threshold, paid on phase confirmation: 62 / 109 / 168 / 92. */
+  /** Flat 20% of the threshold, paid on phase confirmation: 62 / 92 / 101 / 76. */
   bonusGemme: number;
   esercizi: Esercizio[];
   farmaci: Farmaco[];
@@ -80,6 +88,8 @@ export interface Rivalutazione {
 export interface Piano {
   paziente: Paziente;
   obiettivi: Obiettivi;
+  /** Day 1 of phase 1. Rest days and revaluations are laid out from here. */
+  dataInizio: DataISO;
   fasi: Fase[];
   nutrizione: Nutrizione;
   /** Visit dates. A day matching one of these is a recovery day, no budget spent. */
@@ -112,6 +122,18 @@ export type MotivoRecupero =
 
 /** Pain alert scale (README §5.2). Never touches the streak. */
 export type LivelloAllerta = 'nessuna' | 'senti-fisioterapista' | 'rivaluta-piano';
+
+/** What `classificaGiorno()` decided about a day, before anything is scored. */
+export interface Classificazione {
+  tipoGiorno: TipoGiorno;
+  motivoRecupero: MotivoRecupero | null;
+  /**
+   * The full notion: every block the plan prescribes, exercises included,
+   * ignoring whether the day is a recovery one. This is what the streak reads,
+   * never `BloccoChecklist.richiestoOggi`.
+   */
+  checklistCompleta: boolean;
+}
 
 // ---------------------------------------------------------------------------
 // Checklist

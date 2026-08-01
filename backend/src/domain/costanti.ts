@@ -3,6 +3,13 @@
  * CLAUDE.md, so they live in one place and are read, never inlined.
  */
 
+/**
+ * RP per block. Fixed for the whole programme: an action is worth what it is
+ * worth, in every phase. What changes between phases is which blocks exist —
+ * from phase 3 there is no drug, so the day is worth 18 instead of 22.
+ */
+export const RP_ESERCIZI = 16;
+
 /** Every dose of the day, all or nothing (README §5.1). */
 export const RP_FARMACI = 4;
 
