@@ -1,0 +1,16 @@
+# Documentazione: README, CLAUDE, TODO, PROMPTS, sistema-punteggio
+*.md
+
+node_modules/
+dist/
+build/
+
+# Stato runtime del backend
+backend/data/*.json
+backend/data/*.tmp
+backend/data/*.bak
+
+.DS_Store
+*.log
+.env
+.env.local
