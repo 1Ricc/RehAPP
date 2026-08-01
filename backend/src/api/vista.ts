@@ -132,7 +132,7 @@ function componiBlocchi(
 
   blocchi.push({
     id: 'esercizi',
-    titolo: 'Esercizi',
+    titolo: 'Exercises',
     rp: RP_ESERCIZI,
     rpOggi: recupero ? 0 : RP_ESERCIZI,
     // On a recovery day exercises are struck through: "non richiesti oggi".
@@ -144,8 +144,8 @@ function componiBlocchi(
       id: e.id,
       etichetta: e.nome,
       dettaglio: e.durataMinuti
-        ? `${e.durataMinuti} minuti`
-        : `${e.serie} serie × ${e.ripetizioni} ripetizioni`,
+        ? `${e.durataMinuti} min`
+        : `${e.serie} sets × ${e.ripetizioni} reps`,
       fatto: giornoCorrente.eserciziFatti.includes(e.id),
     })),
   });
@@ -163,7 +163,7 @@ function componiBlocchi(
     );
     blocchi.push({
       id: 'farmaci',
-      titolo: 'Farmaci',
+      titolo: 'Medications',
       rp: RP_FARMACI,
       // Drugs and diary stay tickable on a recovery day, but they are worth 0
       // and the app says so before the user ticks them (README §5.2).
@@ -176,7 +176,7 @@ function componiBlocchi(
 
   blocchi.push({
     id: 'diario',
-    titolo: 'Diario del dolore',
+    titolo: 'Pain diary',
     rp: RP_DIARIO,
     rpOggi: recupero ? 0 : RP_DIARIO,
     richiestoOggi: true,
@@ -184,8 +184,8 @@ function componiBlocchi(
     voci: [
       {
         id: 'diario',
-        etichetta: 'Come va il ginocchio oggi',
-        dettaglio: 'Dieci secondi, tutti i giorni',
+        etichetta: 'How does your knee feel today?',
+        dettaglio: 'Ten seconds, every day',
         fatto: giornoCorrente.diario !== null,
       },
     ],
@@ -199,9 +199,9 @@ function componiAllerta(giorniVasAlti: number): Allerta {
   const livello = livelloAllerta(giorniVasAlti);
   const messaggi: Record<typeof livello, string> = {
     nessuna: '',
-    'senti-fisioterapista': 'Terzo giorno di dolore alto. Senti il fisioterapista, il resto può aspettare.',
+    'senti-fisioterapista': 'Third consecutive day of high pain. Contact your physiotherapist — the rest can wait.',
     'rivaluta-piano':
-      'Una settimana così non è una pausa. Vale la pena rivedere il piano con il fisioterapista.',
+      'A week like this is not a pause. It may be worth reviewing the plan with your physiotherapist.',
   };
   return { livello, messaggio: messaggi[livello] };
 }

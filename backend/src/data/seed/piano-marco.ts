@@ -1,5 +1,5 @@
 /**
- * Marco's plan, the only one in the MVP. Ricostruzione LCA, four clinical
+ * Marco's plan, the only one in the MVP. ACL reconstruction, four clinical
  * phases, 84 working days.
  *
  * The plan is built from a start date instead of being a frozen constant: the
@@ -28,148 +28,148 @@ import type { DataISO, Esercizio, Farmaco, Fase, Piano } from '../../domain/type
 /** Ibuprofen, twice a day. Prescribed in the first two phases only. */
 const IBUPROFENE: Farmaco = {
   id: 'far-ibuprofene',
-  nome: 'Ibuprofene 400mg',
+  nome: 'Ibuprofen 400mg',
   orario: ['08:00', '20:00'],
 };
 
 const ESERCIZI_FASE_1: Esercizio[] = [
   {
     id: 'es-1-sollevamento',
-    nome: 'Sollevamento gamba tesa',
+    nome: 'Straight Leg Raise',
     serie: 3,
     ripetizioni: 10,
     frequenzaSettimanale: 7,
-    note: 'Da sdraiato, ginocchio bloccato in estensione',
+    note: 'Lying down, knee locked in extension',
   },
   {
     id: 'es-1-flessione',
-    nome: 'Flessione passiva ginocchio',
+    nome: 'Passive Knee Flexion',
     serie: 2,
     ripetizioni: 15,
     frequenzaSettimanale: 7,
-    note: 'Aiutandoti con le mani, senza forzare oltre il dolore',
+    note: 'Assisted with hands, do not push beyond pain',
   },
   {
     id: 'es-1-isometrica',
-    nome: 'Contrazione isometrica del quadricipite',
+    nome: 'Isometric Quad Contraction',
     serie: 3,
     ripetizioni: 12,
     frequenzaSettimanale: 7,
-    note: 'Dieci secondi di contrazione, dieci di pausa',
+    note: 'Ten seconds contraction, ten seconds rest',
   },
 ];
 
 const ESERCIZI_FASE_2: Esercizio[] = [
   {
     id: 'es-2-miniquat',
-    nome: 'Mini squat alla parete',
+    nome: 'Wall Mini Squat',
     serie: 3,
     ripetizioni: 12,
     frequenzaSettimanale: 7,
-    note: 'Scendi finché il ginocchio resta sopra i 60°',
+    note: 'Lower until knee stays above 60°',
   },
   {
     id: 'es-2-cyclette',
-    nome: 'Cyclette senza resistenza',
+    nome: 'Stationary Bike (no resistance)',
     serie: 1,
     ripetizioni: 1,
     durataMinuti: 15,
     frequenzaSettimanale: 7,
-    note: 'Sella alta, pedalata continua',
+    note: 'High seat, continuous pedalling',
   },
   {
     id: 'es-2-flessione-attiva',
-    nome: 'Flessione attiva assistita',
+    nome: 'Assisted Active Flexion',
     serie: 3,
     ripetizioni: 15,
     frequenzaSettimanale: 7,
-    note: 'Obiettivo 90° entro fine fase',
+    note: 'Target 90° by end of phase',
   },
   {
     id: 'es-2-talloni',
-    nome: 'Sollevamento sui talloni',
+    nome: 'Heel Raise',
     serie: 3,
     ripetizioni: 15,
     frequenzaSettimanale: 7,
-    note: 'In piedi, appoggiandoti a un sostegno',
+    note: 'Standing, holding support',
   },
 ];
 
 const ESERCIZI_FASE_3: Esercizio[] = [
   {
     id: 'es-3-squat',
-    nome: 'Squat a corpo libero',
+    nome: 'Bodyweight Squat',
     serie: 4,
     ripetizioni: 12,
     frequenzaSettimanale: 7,
-    note: 'Schiena neutra, ginocchia in linea con i piedi',
+    note: 'Neutral back, knees in line with feet',
   },
   {
     id: 'es-3-affondi',
-    nome: 'Affondi in avanti',
+    nome: 'Forward Lunges',
     serie: 3,
     ripetizioni: 10,
     frequenzaSettimanale: 7,
-    note: 'Dieci per gamba, con controllo in discesa',
+    note: 'Ten per leg, controlled descent',
   },
   {
     id: 'es-3-step-up',
-    nome: 'Step up su rialzo',
+    nome: 'Step-Up',
     serie: 3,
     ripetizioni: 12,
     frequenzaSettimanale: 7,
-    note: 'Rialzo a 20 cm, salita lenta',
+    note: '20 cm step, slow ascent',
   },
   {
     id: 'es-3-ponte',
-    nome: 'Ponte per i glutei',
+    nome: 'Glute Bridge',
     serie: 3,
     ripetizioni: 15,
     frequenzaSettimanale: 7,
   },
   {
     id: 'es-3-equilibrio',
-    nome: 'Equilibrio su una gamba',
+    nome: 'Single-Leg Balance',
     serie: 3,
     ripetizioni: 10,
     frequenzaSettimanale: 7,
-    note: 'Trenta secondi per ripetizione, occhi aperti',
+    note: 'Thirty seconds per rep, eyes open',
   },
 ];
 
 const ESERCIZI_FASE_4: Esercizio[] = [
   {
     id: 'es-4-corsa',
-    nome: 'Corsa leggera',
+    nome: 'Light Jog',
     serie: 1,
     ripetizioni: 1,
     durataMinuti: 20,
     frequenzaSettimanale: 7,
-    note: 'Su superficie piana, ritmo conversazionale',
+    note: 'On flat surface, conversational pace',
   },
   {
     id: 'es-4-monopodalico',
-    nome: 'Squat monopodalico',
+    nome: 'Single-Leg Squat',
     serie: 3,
     ripetizioni: 8,
     frequenzaSettimanale: 7,
-    note: 'Otto per gamba, senza cedimenti del ginocchio verso l’interno',
+    note: 'Eight per leg, no knee caving inward',
   },
   {
     id: 'es-4-salti',
-    nome: 'Salti a due piedi',
+    nome: 'Two-Foot Jumps',
     serie: 3,
     ripetizioni: 10,
     frequenzaSettimanale: 7,
-    note: 'Atterraggio morbido, ginocchia flesse',
+    note: 'Soft landing, knees bent',
   },
   {
     id: 'es-4-direzione',
-    nome: 'Cambi di direzione',
+    nome: 'Direction Changes',
     serie: 4,
     ripetizioni: 6,
     frequenzaSettimanale: 7,
-    note: 'Andature laterali e diagonali, andatura controllata',
+    note: 'Lateral and diagonal movements, controlled pace',
   },
 ];
 
@@ -187,45 +187,45 @@ interface BozzaFase {
 const BOZZE: BozzaFase[] = [
   {
     numero: 1,
-    nome: 'Fase acuta / protettiva',
-    obiettivo: 'Controllo dolore e gonfiore, mobilità protetta',
+    nome: 'Acute / Protective Phase',
+    obiettivo: 'Pain and swelling control, protected mobility',
     durataGiorniStimata: 14,
     esercizi: ESERCIZI_FASE_1,
     farmaci: [IBUPROFENE],
-    precauzioni: ['Non caricare peso completo senza stampelle', 'Ghiaccio 3 volte al giorno'],
+    precauzioni: ['No full weight-bearing without crutches', 'Ice 3 times a day'],
   },
   {
     numero: 2,
-    nome: 'Recupero mobilità',
-    obiettivo: 'Recuperare 90° di flessione e camminare senza stampelle',
+    nome: 'Mobility Recovery',
+    obiettivo: 'Recover 90° of flexion and walk without crutches',
     durataGiorniStimata: 21,
     esercizi: ESERCIZI_FASE_2,
     farmaci: [IBUPROFENE],
     precauzioni: [
-      'Carico progressivo, fermati se compare gonfiore',
-      'Niente rotazioni sul ginocchio in carico',
+      'Progressive loading, stop if swelling appears',
+      'No rotations on a loaded knee',
     ],
   },
   {
     numero: 3,
-    nome: 'Rinforzo',
-    obiettivo: 'Recuperare forza e controllo neuromuscolare',
+    nome: 'Strengthening',
+    obiettivo: 'Recover strength and neuromuscular control',
     durataGiorniStimata: 28,
     esercizi: ESERCIZI_FASE_3,
     // Ibuprofen suspended from here on: no drug block, and the day is worth less.
     farmaci: [],
-    precauzioni: ['Nessun gesto sportivo di contatto', 'Interrompi se il dolore supera 5'],
+    precauzioni: ['No contact sports movements', 'Stop if pain exceeds 5'],
   },
   {
     numero: 4,
-    nome: 'Funzionale / ritorno all’attività',
-    obiettivo: 'Tornare a correre e praticare sport',
+    nome: 'Functional / Return to Activity',
+    obiettivo: 'Return to running and sport',
     durataGiorniStimata: 21,
     farmaci: [],
     esercizi: ESERCIZI_FASE_4,
     precauzioni: [
-      'Ritorno allo sport solo dopo il test funzionale superato',
-      'Riscaldamento obbligatorio prima della corsa',
+      'Return to sport only after passing the functional test',
+      'Mandatory warm-up before running',
     ],
   },
 ];
@@ -241,10 +241,10 @@ const RIPOSI_PRESCRITTI = [10, 24, 31, 38, 48, 55, 62, 69, 81, 88];
 
 /** Revaluation visits: one at the end of each phase, where the level-up is confirmed. */
 const RIVALUTAZIONI = [
-  { offset: 16, conFisioterapista: 'Dott. Rossi' },
-  { offset: 41, conFisioterapista: 'Dott. Rossi' },
-  { offset: 74, conFisioterapista: 'Dott.ssa Bianchi' },
-  { offset: 98, conFisioterapista: 'Dott. Rossi' },
+  { offset: 16, conFisioterapista: 'Dr. Rossi' },
+  { offset: 41, conFisioterapista: 'Dr. Rossi' },
+  { offset: 74, conFisioterapista: 'Dr. Bianchi' },
+  { offset: 98, conFisioterapista: 'Dr. Rossi' },
 ];
 
 /**
@@ -275,20 +275,19 @@ export function creaPianoMarco(dataInizio: DataISO): Piano {
     paziente: {
       nome: 'Marco',
       eta: 34,
-      patologia: 'Ricostruzione LCA ginocchio destro',
+      patologia: 'Right knee ACL reconstruction',
       // Surgery the day before the plan starts.
       dataIntervento: aggiungiGiorni(dataInizio, -1),
     },
     obiettivi: {
-      breveTermine:
-        'Recuperare 90° di flessione e camminare senza stampelle entro 4 settimane',
-      lungoTermine: 'Tornare a correre e praticare sport entro 6 mesi',
+      breveTermine: 'Recover 90° of flexion and walk without crutches within 4 weeks',
+      lungoTermine: 'Return to running and sport within 6 months',
     },
     dataInizio,
     fasi,
     nutrizione: {
       // Out of the MVP: no points, never in the checklist.
-      indicazioni: ['Apporto proteico 1.2-1.5g/kg', 'Idratazione 2L/giorno'],
+      indicazioni: ['Protein intake 1.2-1.5g/kg', 'Hydration 2L/day'],
     },
     rivalutazioni: RIVALUTAZIONI.map((r) => ({
       data: aggiungiGiorni(dataInizio, r.offset - 1),
@@ -296,9 +295,9 @@ export function creaPianoMarco(dataInizio: DataISO): Piano {
     })),
     giorniRiposoPrescritti: RIPOSI_PRESCRITTI.map((o) => aggiungiGiorni(dataInizio, o - 1)),
     misureOutcome: [
-      'Scala del dolore VAS',
-      'Goniometria range di movimento',
-      'Test funzionale a una gamba',
+      'VAS Pain Scale',
+      'Range of Motion Goniometry',
+      'Single-leg functional test',
     ],
   };
 }

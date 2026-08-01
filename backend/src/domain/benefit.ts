@@ -21,14 +21,14 @@ import type { Badge, BenefitInApp, DatiPersistiti, GiornoStorico } from './types
 const CATALOGO_BENEFIT: Omit<BenefitInApp, 'sbloccato'>[] = [
   {
     id: 'grafico-dolore',
-    nome: 'Grafico del dolore',
-    descrizione: 'L’andamento del tuo VAS giorno per giorno, da mostrare al fisioterapista',
+    nome: 'Pain Chart',
+    descrizione: 'Track your daily VAS trend to share with your physiotherapist',
     faseRichiesta: 2,
   },
   {
     id: 'calendario-heatmap',
-    nome: 'Calendario del percorso',
-    descrizione: 'Tutti i tuoi giorni a colpo d’occhio: pieni, di recupero, persi',
+    nome: 'Activity Calendar',
+    descrizione: 'All your days at a glance: completed, recovery, missed',
     faseRichiesta: 3,
   },
 ];
@@ -52,10 +52,10 @@ export function prossimoBenefit(faseRaggiunta: number): BenefitInApp | null {
  * customisation": it costs a hex string and it is visible on every screen.
  */
 const COLORI = [
-  { colore: '#64748b', etichetta: 'Ardesia' },
-  { colore: '#10b981', etichetta: 'Verde' },
-  { colore: '#3b82f6', etichetta: 'Blu' },
-  { colore: '#f59e0b', etichetta: 'Oro' },
+  { colore: '#64748b', etichetta: 'Slate' },
+  { colore: '#10b981', etichetta: 'Green' },
+  { colore: '#3b82f6', etichetta: 'Blue' },
+  { colore: '#f59e0b', etichetta: 'Gold' },
 ];
 
 export function coloreProfilo(faseRaggiunta: number): { colore: string; etichetta: string } {
@@ -94,29 +94,29 @@ export function badge(dati: DatiPersistiti): Badge[] {
   const definizioni: Omit<Badge, 'ottenuto'>[] = [
     {
       id: 'prima-settimana',
-      nome: 'Prima settimana',
-      descrizione: 'Sette giorni di fila senza saltare niente',
+      nome: 'First Week',
+      descrizione: 'Seven days in a row without missing anything',
       progresso: Math.min(streak, 7),
       obiettivo: 7,
     },
     {
       id: 'fase-superata',
-      nome: 'Fase superata',
-      descrizione: 'Hai chiuso una fase del percorso clinico',
+      nome: 'Phase Cleared',
+      descrizione: 'You completed a phase of the clinical path',
       progresso: Math.min(fasiChiuse, 1),
       obiettivo: 1,
     },
     {
       id: 'streak-30',
-      nome: 'Trenta giorni',
-      descrizione: 'Un mese intero di aderenza al piano',
+      nome: 'Thirty Days',
+      descrizione: 'A full month sticking to the plan',
       progresso: Math.min(streak, 30),
       obiettivo: 30,
     },
     {
       id: 'diario-14',
-      nome: 'Diario fedele',
-      descrizione: 'Quattordici giorni di fila col diario compilato',
+      nome: 'Faithful Diary',
+      descrizione: 'Fourteen consecutive days with the diary filled',
       progresso: Math.min(diario, 14),
       obiettivo: 14,
     },
