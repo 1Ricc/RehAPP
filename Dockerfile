@@ -10,6 +10,11 @@ FROM node:22-bookworm-slim AS frontend
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
+# The client imports its types straight from the server through the `@backend/*`
+# alias (tsconfig.app.json → ../backend/src/*). Nothing from backend is bundled —
+# the imports are type-only — but `tsc -b` still has to resolve them, so the
+# sources have to be here.
+COPY backend/src /app/backend/src
 COPY frontend/ ./
 RUN npm run build
 
