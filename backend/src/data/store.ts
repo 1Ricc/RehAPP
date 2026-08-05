@@ -26,7 +26,10 @@ import type { DatiPersistiti } from '../domain/types.js';
 import { datiIniziali } from './fixture.js';
 
 const RADICE = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CARTELLA_DATI = join(RADICE, 'data');
+// Deployed, the writable directory is wherever the host mounts it, which is
+// never next to the source. Locally the default keeps `backend/data` working
+// with no environment to set up.
+const CARTELLA_DATI = process.env['REHUB_DATA_DIR'] ?? join(RADICE, 'data');
 const DB_PATH = join(CARTELLA_DATI, 'state.db');
 const JSON_PATH = join(CARTELLA_DATI, 'state.json');
 

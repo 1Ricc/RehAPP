@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+*.md
+!README.md
+*.tsbuildinfo
+*.log
+.env
+.env.local
+backend/data/state.db-shm
+backend/data/state.db-wal

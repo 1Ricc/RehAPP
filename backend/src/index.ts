@@ -3,7 +3,10 @@
  * and 24 hours do not.
  */
 
+import { existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
@@ -29,6 +32,34 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api', rotte);
 app.use('/api/demo', rotteDemo);
+
+/**
+ * The built frontend, served by the same process that serves the API.
+ *
+ * One origin means `fetch('/api/...')` in the client works deployed exactly as
+ * it works behind the Vite dev proxy, with no base URL to configure and no CORS
+ * to get wrong. It also means one thing to deploy and one thing that can be
+ * down. Mounted after the API routers, so no static file can ever shadow a
+ * route.
+ *
+ * Absent in development: `npm run dev` serves the UI from Vite on 5173, this
+ * directory does not exist, and the block is skipped.
+ */
+const CARTELLA_STATICA =
+  process.env['REHUB_STATIC_DIR'] ??
+  join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'frontend', 'dist');
+
+if (existsSync(CARTELLA_STATICA)) {
+  app.use(express.static(CARTELLA_STATICA));
+  // Deep links are client-side routes: anything that is not the API and not a
+  // real file is the SPA shell, and the browser sorts out which view it is.
+  // Only GET — a POST to a path that does not exist is a mistake, and it should
+  // hear about it in JSON below, not receive a page.
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+    res.sendFile(join(CARTELLA_STATICA, 'index.html'));
+  });
+}
 
 app.use((_req, res) => {
   const errore: RispostaErrore = {
@@ -75,6 +106,11 @@ app.listen(PORTA, HOST, () => {
     console.log(`  dal telefono:   http://${ip}:${PORTA}`);
   }
   console.log(`  stato:          ${percorsoStato()}`);
+  console.log(
+    existsSync(CARTELLA_STATICA)
+      ? `  frontend:       ${CARTELLA_STATICA}`
+      : '  frontend:       non compilato — solo API (in sviluppo usa Vite su 5173)',
+  );
 });
 
 /** The IP to point the phone at (TODO-backend.md §10). */

@@ -1,0 +1,13 @@
+{
+  "name": "rehub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rehub — deployment entry point. The two real packages are backend/ and frontend/; this file exists so the host has one build command and one start command.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "cd frontend && npm ci && npm run build && cd ../backend && npm ci --omit=dev",
+    "start": "cd backend && npm start"
+  }
+}

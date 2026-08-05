@@ -10,6 +10,9 @@ node_modules/
 dist/
 build/
 
+# Incremental build cache, rewritten by `npm run build`
+*.tsbuildinfo
+
 # Stato runtime del backend
 backend/data/*.json
 backend/data/*.tmp
