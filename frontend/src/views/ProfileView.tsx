@@ -76,6 +76,10 @@ export default function ProfileView({ stato, onLogout }: Props) {
 
   const daysInRecovery = daysSince(paziente.dataIntervento);
 
+  // Same as HomeView: no plan means the user is on the choose-a-plan screen,
+  // never here. Below every hook, so the hook order never changes.
+  if (!fase) return null;
+
   return (
     <>
       <div style={{ padding: '16px 20px', borderBottom: '1px solid #EEF0EA' }}>

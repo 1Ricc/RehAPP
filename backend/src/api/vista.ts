@@ -34,6 +34,7 @@ import type {
 } from '../domain/types.js';
 
 export function componiStato(dati: DatiPersistiti): RispostaStato {
+  if (dati.piano === null) return statoSenzaPiano(dati);
   const { piano, stato, giornoCorrente } = dati;
   const fase = faseCorrente(dati);
   const classe = classificaGiorno(piano, fase, stato, giornoCorrente);
@@ -114,12 +115,57 @@ export function componiStato(dati: DatiPersistiti): RispostaStato {
       etichettaColore: colore.etichetta,
     },
     fase: cardFase,
+    senzaPiano: false,
     barra,
     oggi,
     allerta: componiAllerta(stato.giorniVasAltiConsecutivi),
     benefit: benefitInApp(stato.faseRaggiunta),
     prossimoBenefit: prossimoBenefit(stato.faseRaggiunta),
     // The other half of the home teaser: "177/200 per il buono farmacia".
+    prossimaRicompensa: prossimaRicompensa(catalogo(dati)),
+  };
+}
+
+/**
+ * The shape the client gets before a plan exists. Every list is empty rather
+ * than absent, so the UI renders its normal components with nothing in them
+ * instead of needing a parallel set of null checks. Only `fase` is null, and
+ * `senzaPiano` is the flag the client actually routes on.
+ *
+ * The benefits are still listed: they are gated on phase 1, which this state is
+ * in, and showing them is part of the pitch for adopting a plan at all.
+ */
+function statoSenzaPiano(dati: DatiPersistiti): RispostaStato {
+  const colore = coloreProfilo(dati.stato.faseRaggiunta);
+  return {
+    paziente: { nome: '', eta: 0, patologia: '', dataIntervento: dati.giornoCorrente.data },
+    profilo: { nome: '', colore: colore.colore, etichettaColore: colore.etichetta },
+    fase: null,
+    senzaPiano: true,
+    barra: {
+      streakGiorni: 0,
+      moltiplicatore: 1,
+      moltiplicatoreCongelato: false,
+      gemme: Math.floor(dati.stato.gemmePortafoglio),
+      rpProgressoFase: 0,
+      rpTotali: dati.stato.rpTotali,
+    },
+    oggi: {
+      data: dati.giornoCorrente.data,
+      tipoGiorno: 'normale',
+      motivoRecupero: null,
+      blocchi: [],
+      rpPotenziali: 0,
+      rpMaturati: 0,
+      // Nothing prescribed is not the same as everything done: a day with no
+      // plan must never pay a streak.
+      checklistCompleta: false,
+      diario: dati.giornoCorrente.diario,
+      finalizzato: false,
+    },
+    allerta: componiAllerta(dati.stato.giorniVasAltiConsecutivi),
+    benefit: benefitInApp(dati.stato.faseRaggiunta),
+    prossimoBenefit: prossimoBenefit(dati.stato.faseRaggiunta),
     prossimaRicompensa: prossimaRicompensa(catalogo(dati)),
   };
 }

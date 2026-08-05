@@ -11,11 +11,13 @@ import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 
+import { rotteAuth } from './api/auth.js';
 import { rotteDemo } from './api/demo.js';
 import { ErroreApi } from './api/errori.js';
 import { rotte } from './api/rotte.js';
 import { sessione } from './api/sessione.js';
-import { apri, percorsoStato } from './data/store.js';
+import { apri, descrizioneStato } from './data/store.js';
+import { accountDisponibili, preparaTabelle } from './data/utenti.js';
 import type { RispostaErrore } from './domain/types.js';
 
 const PORTA = Number(process.env['PORT'] ?? 3001);
@@ -27,12 +29,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 // Before the routers: every one of them needs to know whose save file this is.
-app.use(sessione);
+// Async since resolving a login token is a database lookup, and an async
+// middleware's rejection has to be handed to next() by hand.
+app.use((req, res, next) => {
+  sessione(req, res, next).catch(next);
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+// Before `rotte`, so /api/login is offered to real accounts first. It falls
+// through to the demo login there when it cannot serve the request.
+app.use('/api', rotteAuth);
 app.use('/api', rotte);
 app.use('/api/demo', rotteDemo);
 
@@ -102,14 +111,20 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 // Open the database before accepting traffic. There is no global state left to
 // seed — each session seeds its own on first sight — but the schema upgrade and
 // the file permissions are worth finding out about at boot, not mid-request.
-apri();
+await apri();
+// Accounts only exist where there is a database to keep them in.
+if (accountDisponibili()) await preparaTabelle();
+
+// Hoisted: the listen callback is not async, and the description costs a round
+// trip to whichever backend answered.
+const descrizione = await descrizioneStato();
 
 app.listen(PORTA, HOST, () => {
   console.log(`Rehub backend su http://localhost:${PORTA}`);
   for (const ip of indirizziLan()) {
     console.log(`  dal telefono:   http://${ip}:${PORTA}`);
   }
-  console.log(`  stato:          ${percorsoStato()}`);
+  console.log(`  stato:          ${descrizione}`);
   console.log(
     existsSync(CARTELLA_STATICA)
       ? `  frontend:       ${CARTELLA_STATICA}`

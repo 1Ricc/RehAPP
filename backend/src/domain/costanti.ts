@@ -37,5 +37,5 @@ export const RECUPERI_MANUALI_PER_FASE = 1;
 export const ALLERTA_SENTI_FISIOTERAPISTA = 3;
 export const ALLERTA_RIVALUTA_PIANO = 7;
 
-/** Bumped when DatiPersistiti changes shape. v2 added `voucher`. */
-export const VERSIONE_STATO = 2;
+/** Bumped when DatiPersistiti changes shape. v3 made `piano` nullable. */
+export const VERSIONE_STATO = 3;

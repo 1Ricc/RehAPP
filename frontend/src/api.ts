@@ -43,6 +43,28 @@ function sessionId(): string {
   }
 }
 
+/**
+ * Replaces the guest id with the token the server issued at login. Same storage
+ * key, so every later request picks it up with no other change — the header is
+ * one string, and the server tells a token from a guest id by its `t-` prefix.
+ */
+export function impostaSessione(token: string): void {
+  try {
+    localStorage.setItem(CHIAVE_SESSIONE, token);
+  } catch {
+    sessioneInMemoria = token;
+  }
+}
+
+/** Back to a fresh guest save file. */
+export function dimenticaSessione(): void {
+  try {
+    localStorage.removeItem(CHIAVE_SESSIONE);
+  } catch {
+    sessioneInMemoria = null;
+  }
+}
+
 async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
     ...init,
@@ -60,11 +82,35 @@ async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
 export const getState = (): Promise<RispostaStato> =>
   fetchJSON('/state');
 
-export const login = (username: string, password: string): Promise<RispostaStato> =>
-  fetchJSON('/login', {
-    method: 'POST',
-    body: JSON.stringify({ username, password }),
-  });
+export interface RispostaAuth {
+  token: string;
+  utente: { id: string; username: string; nome: string; eta: number | null; obiettivo: string };
+  stato: RispostaStato;
+}
+
+export const registra = (corpo: {
+  username: string;
+  password: string;
+  nome: string;
+  eta: number | null;
+  obiettivo: string;
+}): Promise<RispostaAuth> =>
+  fetchJSON('/register', { method: 'POST', body: JSON.stringify(corpo) });
+
+/**
+ * Log in, to an account or to the demo.
+ *
+ * One endpoint, two shapes. The server offers /api/login to real accounts
+ * first and falls through to the hardcoded demo credentials, which answer with
+ * a bare state and no token. `token` in the response is what tells them apart.
+ */
+export const accedi = (username: string, password: string): Promise<RispostaAuth | RispostaStato> =>
+  fetchJSON('/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+
+export const conAccount = (r: RispostaAuth | RispostaStato): r is RispostaAuth =>
+  typeof (r as RispostaAuth).token === 'string';
+
+export const esci = (): Promise<{ ok: boolean }> => fetchJSON('/logout', { method: 'POST' });
 
 export const toggleTask = (blocco: IdBlocco, voceId: string, fatto: boolean): Promise<RispostaStato> =>
   fetchJSON('/tasks/toggle', {
@@ -119,5 +165,8 @@ export const createPlan = (payload: {
   farmaci: FarmacoPianoCreato[];
 }): Promise<PianoCreato> =>
   fetchJSON('/plans', { method: 'POST', body: JSON.stringify(payload) });
+
+export const adottaPiano = (shareId: string): Promise<RispostaStato> =>
+  fetchJSON(`/plans/${encodeURIComponent(shareId)}/adopt`, { method: 'POST' });
 
 export type { EsercizioPianoCreato, FarmacoPianoCreato };

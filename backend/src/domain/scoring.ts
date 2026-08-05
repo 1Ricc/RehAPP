@@ -171,7 +171,7 @@ function contaVasAlti(precedente: number, giorno: GiornoCorrente): number {
 export function chiudiGiornata(dati: DatiPersistiti): DatiPersistiti {
   const fase = faseCorrente(dati);
   const { giornoCorrente: giorno, stato } = dati;
-  const classe = classificaGiorno(dati.piano, fase, stato, giorno);
+  const classe = classificaGiorno(pianoDi(dati), fase, stato, giorno);
   const recupero = classe.tipoGiorno === 'recupero';
 
   const rp = rpDelGiorno(fase, giorno, recupero);
@@ -247,7 +247,7 @@ export function nuovoGiorno(data: DataISO): GiornoCorrente {
 export function finalizzaGiornata(dati: DatiPersistiti): DatiPersistiti {
   const fase = faseCorrente(dati);
   const { giornoCorrente: giorno, stato } = dati;
-  const classe = classificaGiorno(dati.piano, fase, stato, giorno);
+  const classe = classificaGiorno(pianoDi(dati), fase, stato, giorno);
   const recupero = classe.tipoGiorno === 'recupero';
 
   const rp = rpDelGiorno(fase, giorno, recupero);
@@ -311,7 +311,7 @@ export function finalizzaGiornata(dati: DatiPersistiti): DatiPersistiti {
 export function avanzaFase(dati: DatiPersistiti): DatiPersistiti {
   const { stato } = dati;
   const completata = faseCorrente(dati);
-  const successiva = dati.piano.fasi[stato.faseRaggiunta];
+  const successiva = pianoDi(dati).fasi[stato.faseRaggiunta];
 
   // Bonus is the flat, pre-announced figure from the plan, never multiplied.
   const gemme = stato.gemmePortafoglio + completata.bonusGemme;
@@ -342,8 +342,21 @@ export function avanzaFase(dati: DatiPersistiti): DatiPersistiti {
   };
 }
 
+/**
+ * The plan, for everything in the engine that needs one.
+ *
+ * The engine only ever runs on a state that has adopted a plan: the API
+ * branches on `piano === null` at the boundary, before anything here is
+ * reached. Getting here without one is a bug in the caller, so it fails loudly
+ * rather than scoring a day against a plan that does not exist.
+ */
+export function pianoDi(dati: DatiPersistiti): Piano {
+  if (!dati.piano) throw new Error('operazione del motore su uno stato senza piano');
+  return dati.piano;
+}
+
 export function faseCorrente(dati: DatiPersistiti): Fase {
-  const fase = dati.piano.fasi[dati.stato.faseRaggiunta - 1];
+  const fase = pianoDi(dati).fasi[dati.stato.faseRaggiunta - 1];
   if (!fase) throw new Error(`fase ${dati.stato.faseRaggiunta} assente nel piano`);
   return fase;
 }

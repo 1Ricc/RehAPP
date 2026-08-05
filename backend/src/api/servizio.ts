@@ -22,6 +22,16 @@ const MAX_GIORNI_RECUPERATI = 400;
  */
 export function sincronizzaGiornata(dati: DatiPersistiti, adesso: Date): DatiPersistiti {
   const oggi = giornataLogica(adesso);
+
+  // Nothing was prescribed, so nothing was missed: a state with no plan just
+  // moves to today. Scoring it would mean asking the engine which phase it is
+  // in, and there is no answer to that yet.
+  if (dati.piano === null) {
+    return dati.giornoCorrente.data === oggi
+      ? dati
+      : { ...dati, giornoCorrente: nuovoGiorno(oggi) };
+  }
+
   let corrente = dati;
   let giri = 0;
   while (corrente.giornoCorrente.data < oggi && giri < MAX_GIORNI_RECUPERATI) {

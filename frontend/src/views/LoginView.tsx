@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 interface Props {
   onLogin: (username: string, password: string) => Promise<void>;
+  onRegister: () => void;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -17,7 +18,7 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-export default function LoginView({ onLogin }: Props) {
+export default function LoginView({ onLogin, onRegister }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,8 +102,24 @@ export default function LoginView({ onLogin }: Props) {
           <div style={{ fontSize: 13, color: '#C4453A', marginTop: 4, fontWeight: 600, textAlign: 'center' }}>{err}</div>
         )}
 
-        <div style={{ fontSize: 12, color: '#8A9485', marginTop: 24, textAlign: 'center' }}>
-          By continuing you agree this is a demo. No data leaves your browser.
+        <button
+          type="button"
+          onClick={onRegister}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: 13,
+            color: '#4FA8E8',
+            fontWeight: 700,
+            cursor: 'pointer',
+            marginTop: 16,
+          }}
+        >
+          Create an account
+        </button>
+
+        <div style={{ fontSize: 12, color: '#8A9485', marginTop: 16, textAlign: 'center' }}>
+          Your account keeps your plan and your progress across devices.
         </div>
       </div>
     </div>

@@ -73,6 +73,11 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
       .catch(() => { /* strip just shows today + upcoming */ });
   }, [oggi.data]);
 
+  // Never rendered without a plan: App routes a `senzaPiano` state to the
+  // choose-a-plan screen. The guard is here so the phase card can read `fase`
+  // without a null check on every field.
+  if (!fase) return null;
+
   const initials = profilo.nome
     .split(' ')
     .map(n => n[0])
@@ -93,7 +98,7 @@ export default function HomeView({ stato, onStateUpdate, onNavigate }: Props) {
       // "Phase Cleared" is earned the moment a phase closes — celebrate it
       // right here, where the presenter's own click triggers it live.
       setBadgeIn(false);
-      setBadgeUnlock(next.fase.numero);
+      setBadgeUnlock(next.fase?.numero ?? fase.numero);
       setTimeout(() => setBadgeIn(true), 10);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error');
