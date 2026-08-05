@@ -11,16 +11,18 @@
 
 import { Router, type NextFunction, type Request, type Response } from 'express';
 
+import { PianoNonConvertibile, convertiPiano } from '../domain/conversione-piano.js';
 import { ErroreNegozio, riscatta } from '../domain/negozio.js';
 import { giorniDiAssenza, notifiche, silenzio } from '../domain/notifiche.js';
 import { avanzaFase, classificaGiorno, faseCorrente, finalizzaGiornata, pianoDi } from '../domain/scoring.js';
 import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costanti.js';
 import { CREDENZIALI } from '../data/seed/credenziali.js';
+import { datiSenzaPiano } from '../data/fixture.js';
 import { save } from '../data/store.js';
 import type { Diario, EsercizioPianoCreato, FarmacoPianoCreato, IdBlocco, PianoCreato, Voucher } from '../domain/types.js';
 import { nonPossibile, richiestaNonValida } from './errori.js';
 import { aggiorna, statoCorrente } from './servizio.js';
-import { sid } from './sessione.js';
+import { sid, utenteCorrente } from './sessione.js';
 import {
   componiBadge,
   componiNegozio,
@@ -387,6 +389,55 @@ rotte.post(
     }));
 
     return piano;
+  }),
+);
+
+/**
+ * POST /api/plans/:shareId/adopt — makes an authored plan the one being scored.
+ *
+ * Progress restarts: a new plan means phase 1 day 1, and RP earned against a
+ * different prescription would be meaningless against this one. Gems and
+ * vouchers are kept because they were earned, and taking them back for changing
+ * plan would punish exactly the person who is still trying.
+ */
+rotte.post(
+  '/plans/:shareId/adopt',
+  rotta(async (req) => {
+    const shareId = (req.params['shareId'] ?? '').trim();
+    return componiStato(
+      await aggiorna(sid(req), (dati) => {
+        const piano = (dati.pianiCreati ?? []).find((p) => p.shareId === shareId);
+        if (!piano) throw richiestaNonValida(`No plan found with code "${shareId}".`);
+
+        const utente = utenteCorrente(req);
+        const paziente = {
+          nome: utente?.nome ?? 'You',
+          eta: utente?.eta ?? 0,
+          patologia: piano.label || 'Custom plan',
+          dataIntervento: dati.giornoCorrente.data,
+        };
+
+        try {
+          const convertito = convertiPiano(piano, paziente, dati.giornoCorrente.data);
+          const azzerato = datiSenzaPiano();
+          return {
+            ...azzerato,
+            piano: convertito,
+            stato: {
+              ...azzerato.stato,
+              sogliaFaseAttuale: convertito.fasi[0]?.sogliaRp ?? 0,
+              gemmePortafoglio: dati.stato.gemmePortafoglio,
+            },
+            voucher: dati.voucher,
+            pianiCreati: dati.pianiCreati ?? [],
+            giornoCorrente: { ...azzerato.giornoCorrente, data: dati.giornoCorrente.data },
+          };
+        } catch (errore) {
+          if (errore instanceof PianoNonConvertibile) throw richiestaNonValida(errore.message);
+          throw errore;
+        }
+      }),
+    );
   }),
 );
 
