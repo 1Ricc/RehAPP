@@ -15,7 +15,7 @@ import { rotteDemo } from './api/demo.js';
 import { ErroreApi } from './api/errori.js';
 import { rotte } from './api/rotte.js';
 import { sessione } from './api/sessione.js';
-import { apri, percorsoStato } from './data/store.js';
+import { apri, descrizioneStato } from './data/store.js';
 import type { RispostaErrore } from './domain/types.js';
 
 const PORTA = Number(process.env['PORT'] ?? 3001);
@@ -102,14 +102,18 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 // Open the database before accepting traffic. There is no global state left to
 // seed — each session seeds its own on first sight — but the schema upgrade and
 // the file permissions are worth finding out about at boot, not mid-request.
-apri();
+await apri();
+
+// Hoisted: the listen callback is not async, and the description costs a round
+// trip to whichever backend answered.
+const descrizione = await descrizioneStato();
 
 app.listen(PORTA, HOST, () => {
   console.log(`Rehub backend su http://localhost:${PORTA}`);
   for (const ip of indirizziLan()) {
     console.log(`  dal telefono:   http://${ip}:${PORTA}`);
   }
-  console.log(`  stato:          ${percorsoStato()}`);
+  console.log(`  stato:          ${descrizione}`);
   console.log(
     existsSync(CARTELLA_STATICA)
       ? `  frontend:       ${CARTELLA_STATICA}`

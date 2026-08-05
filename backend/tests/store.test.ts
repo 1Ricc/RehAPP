@@ -76,7 +76,7 @@ describe('una riga per sessione', () => {
     const a = await store.load('sessione-a');
     await store.save('sessione-a', { ...a, stato: { ...a.stato, gemmePortafoglio: 1234 } });
 
-    store.svuotaCache();
+    await store.svuotaCache();
 
     expect((await store.load('sessione-a')).stato.gemmePortafoglio).toBe(1234);
   });
@@ -139,7 +139,7 @@ describe('la tabella non cresce senza limite', () => {
     db.prepare('UPDATE stato SET visto_il = ? WHERE id = ?').run(treGiorniFa, 'vecchia');
     db.close();
 
-    store.svuotaCache();
+    await store.svuotaCache();
     await store.load('nuova-arrivata');
 
     const controllo = new Database(join(dir, 'state.db'));
@@ -175,7 +175,7 @@ describe('il blob resta quello che il dominio si aspetta', () => {
       ],
     };
     await store.save('sessione-a', modificato);
-    store.svuotaCache();
+    await store.svuotaCache();
 
     const riletto = await store.load('sessione-a');
     expect(riletto.voucher).toHaveLength(1);
