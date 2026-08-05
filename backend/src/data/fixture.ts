@@ -65,3 +65,54 @@ export function datiIniziali(adesso: Date = new Date()): DatiPersistiti {
     pianiCreati: [],
   };
 }
+
+/**
+ * What a save file starts from, decided by whose it is.
+ *
+ * An account (`u-…`) starts empty: it belongs to somebody following their own
+ * rehab, and Marco's seven days of earned progress are not theirs to inherit.
+ * Every other id is a guest on the public URL, and for them the demo *is* the
+ * product. The prefix is the same one `pota()` uses to know what it may delete.
+ */
+export function datiPerSessione(id: string, adesso: Date = new Date()): DatiPersistiti {
+  return id.startsWith('u-') ? datiSenzaPiano(adesso) : datiIniziali(adesso);
+}
+
+/**
+ * A brand new account: no plan, nothing earned. Everything the engine reads is
+ * present and zeroed, so the only special case downstream is `piano === null`.
+ *
+ * This is what an account starts from. `datiIniziali` above is Marco's demo,
+ * which is the right thing for a guest opening the public URL and the wrong
+ * thing for somebody who just signed up to follow their own rehab.
+ */
+export function datiSenzaPiano(adesso: Date = new Date()): DatiPersistiti {
+  return {
+    versione: VERSIONE_STATO,
+    piano: null,
+    stato: {
+      faseRaggiunta: 1,
+      sogliaFaseAttuale: 0,
+      rpProgressoFase: 0,
+      rpTotali: 0,
+      giorniFaseTrascorsi: 0,
+      gemmePortafoglio: 0,
+      streakGiorni: 0,
+      moltiplicatoreAttuale: 1,
+      recuperiManualiUsatiInFase: 0,
+      giorniVasAltiConsecutivi: 0,
+      avanzamentoDisponibile: false,
+      ultimaGiornataChiusa: null,
+    },
+    giornoCorrente: {
+      data: giornataLogica(adesso),
+      eserciziFatti: [],
+      dosiPrese: [],
+      diario: null,
+      recuperoManuale: null,
+    },
+    storico: [],
+    voucher: [],
+    pianiCreati: [],
+  };
+}

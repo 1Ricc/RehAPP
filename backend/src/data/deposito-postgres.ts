@@ -15,7 +15,7 @@ import { Pool } from 'pg';
 
 import { VERSIONE_STATO } from '../domain/costanti.js';
 import type { DatiPersistiti } from '../domain/types.js';
-import { datiIniziali } from './fixture.js';
+import { datiPerSessione } from './fixture.js';
 
 /** Guest rows untouched for this long are demos nobody came back to. */
 const SCADENZA_ORE = 48;
@@ -107,7 +107,7 @@ async function inizializza(id: string, adesso: Date = new Date()): Promise<DatiP
   // The table only grows when a new id appears, so this is the one place that
   // has to pay for the cleanup.
   await pota();
-  const dati = datiIniziali(adesso);
+  const dati = datiPerSessione(id, adesso);
   await save(id, dati);
   return dati;
 }

@@ -180,6 +180,6 @@ describe('il blob resta quello che il dominio si aspetta', () => {
     const riletto = await store.load('sessione-a');
     expect(riletto.voucher).toHaveLength(1);
     expect(riletto.voucher[0]?.codice).toBe('REHUB-AAAA-BBBB');
-    expect(riletto.piano.fasi).toHaveLength(dati.piano.fasi.length);
+    expect(riletto.piano!.fasi).toHaveLength(dati.piano!.fasi.length);
   });
 });

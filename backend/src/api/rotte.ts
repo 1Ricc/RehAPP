@@ -13,7 +13,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 
 import { ErroreNegozio, riscatta } from '../domain/negozio.js';
 import { giorniDiAssenza, notifiche, silenzio } from '../domain/notifiche.js';
-import { avanzaFase, classificaGiorno, faseCorrente, finalizzaGiornata } from '../domain/scoring.js';
+import { avanzaFase, classificaGiorno, faseCorrente, finalizzaGiornata, pianoDi } from '../domain/scoring.js';
 import { RECUPERI_MANUALI_PER_FASE, VAS_SOGLIA_RECUPERO } from '../domain/costanti.js';
 import { CREDENZIALI } from '../data/seed/credenziali.js';
 import { save } from '../data/store.js';
@@ -220,7 +220,7 @@ rotte.post(
     componiStato(
       await aggiorna(sid(req), (dati) => {
         const fase = faseCorrente(dati);
-        const classe = classificaGiorno(dati.piano, fase, dati.stato, dati.giornoCorrente);
+        const classe = classificaGiorno(pianoDi(dati), fase, dati.stato, dati.giornoCorrente);
         if (!classe.checklistCompleta) {
           throw richiestaNonValida('La checklist non è ancora completa.');
         }

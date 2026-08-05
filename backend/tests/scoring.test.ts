@@ -282,9 +282,9 @@ describe('precedenza nella classificazione', () => {
 
   it('il riposo prescritto batte la checklist piena', () => {
     const conRiposi = giorniPieni(statoVuoto(true), 3);
-    const riposo = conRiposi.piano.giorniRiposoPrescritti[0]!;
+    const riposo = conRiposi.piano!.giorniRiposoPrescritti[0]!;
     const classe = classificaGiorno(
-      conRiposi.piano,
+      conRiposi.piano!,
       faseCorrente(conRiposi),
       conRiposi.stato,
       pieno({ ...conRiposi, giornoCorrente: nuovoGiorno(riposo) }).giornoCorrente,
@@ -333,7 +333,7 @@ describe('precedenza nella classificazione', () => {
       dosiPrese: fase.farmaci.flatMap((f) => f.orario.map((o) => `${f.id}@${o}`)),
       diario: { vas: 8, compilatoAlle: '20:30' },
     };
-    const classe = classificaGiorno(base.piano, fase, base.stato, soloFarmaciEDiario);
+    const classe = classificaGiorno(base.piano!, fase, base.stato, soloFarmaciEDiario);
     expect(classe.checklistCompleta).toBe(false);
     expect(classe.tipoGiorno).toBe('recupero');
   });

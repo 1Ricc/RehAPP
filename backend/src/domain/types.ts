@@ -230,7 +230,8 @@ export interface GiornoStorico {
 export interface DatiPersistiti {
   /** Bumped when the shape changes, so a stale state.json fails loudly. */
   versione: number;
-  piano: Piano;
+  /** Null until the user adopts a plan they built or received by code. */
+  piano: Piano | null;
   stato: StatoUtente;
   giornoCorrente: GiornoCorrente;
   storico: GiornoStorico[];
@@ -339,7 +340,10 @@ export interface RispostaStato {
   paziente: Paziente;
   /** Name plus the colour the current phase earned (README §5.3). */
   profilo: { nome: string; colore: string; etichettaColore: string };
-  fase: CardFase;
+  /** Null before a plan is adopted: there is no phase to be in yet. */
+  fase: CardFase | null;
+  /** True when there is no plan yet: the client shows the choose-a-plan screen. */
+  senzaPiano: boolean;
   barra: BarraStato;
   oggi: GiornoInCorso;
   allerta: Allerta;

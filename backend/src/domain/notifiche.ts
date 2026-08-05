@@ -17,7 +17,7 @@
  */
 
 import { catalogo } from './negozio.js';
-import { classificaGiorno, checklistCompleta, faseCorrente } from './scoring.js';
+import { classificaGiorno, checklistCompleta, faseCorrente, pianoDi } from './scoring.js';
 import type { DatiPersistiti, Notifica, Silenzio, TipoNotifica } from './types.js';
 
 /** README §7.1: never more than three in a day, whatever happens. */
@@ -147,7 +147,7 @@ function inQuiete(dati: DatiPersistiti, ora: number): boolean {
  */
 export function silenzio(dati: DatiPersistiti, adesso: Date): Silenzio | null {
   const fase = faseCorrente(dati);
-  const classe = classificaGiorno(dati.piano, fase, dati.stato, dati.giornoCorrente);
+  const classe = classificaGiorno(pianoDi(dati), fase, dati.stato, dati.giornoCorrente);
 
   if (classe.tipoGiorno === 'recupero') {
     return {
@@ -196,7 +196,7 @@ function contesto(dati: DatiPersistiti, mancanti: string[]): Contesto {
   const fase = faseCorrente(dati);
   const minuti = fase.esercizi.reduce((t, e) => t + (e.durataMinuti ?? MINUTI_PER_ESERCIZIO), 0);
   const acquistabile = catalogo(dati).find((r) => r.acquistabile);
-  const successiva = dati.piano.fasi[dati.stato.faseRaggiunta - 1];
+  const successiva = pianoDi(dati).fasi[dati.stato.faseRaggiunta - 1];
 
   return {
     nomeFarmaco: fase.farmaci[0]?.nome ?? 'La dose',

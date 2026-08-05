@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 import { VERSIONE_STATO } from '../domain/costanti.js';
 import type { DatiPersistiti } from '../domain/types.js';
-import { datiIniziali } from './fixture.js';
+import { datiPerSessione } from './fixture.js';
 
 const RADICE = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Deployed, the writable directory is wherever the host mounts it, which is
@@ -188,7 +188,7 @@ function inizializza(
   // that has to pay for the cleanup.
   potaSessioni(database);
 
-  const dati = datiIniziali(adesso);
+  const dati = datiPerSessione(sessione, adesso);
   cache.set(sessione, dati);
   upsert(database, sessione, dati);
   return dati;
