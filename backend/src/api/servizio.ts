@@ -36,11 +36,14 @@ export function sincronizzaGiornata(dati: DatiPersistiti, adesso: Date): DatiPer
   return corrente;
 }
 
-/** Reads the state, rolling the day over first. Persists only if something moved. */
-export async function statoCorrente(adesso: Date = new Date()): Promise<DatiPersistiti> {
-  const dati = await load();
+/** Reads one session's state, rolling the day over first. Persists only if something moved. */
+export async function statoCorrente(
+  sessione: string,
+  adesso: Date = new Date(),
+): Promise<DatiPersistiti> {
+  const dati = await load(sessione);
   const sincronizzato = sincronizzaGiornata(dati, adesso);
-  if (sincronizzato !== dati) await save(sincronizzato);
+  if (sincronizzato !== dati) await save(sessione, sincronizzato);
   return sincronizzato;
 }
 
@@ -54,10 +57,14 @@ export async function statoCorrente(adesso: Date = new Date()): Promise<DatiPers
  * old state and have one overwrite the other. Put an `await` inside `muta` and
  * three quick ticks in a row start losing one, which is exactly the scenario
  * the optimistic UI produces (TODO §5).
+ *
+ * Per-session rows narrow the blast radius of that race to one person, but they
+ * do not remove it: two taps from the *same* phone still land on the same row.
  */
 export async function aggiorna(
+  sessione: string,
   muta: (dati: DatiPersistiti) => DatiPersistiti,
   adesso: Date = new Date(),
 ): Promise<DatiPersistiti> {
-  return save(muta(await statoCorrente(adesso)));
+  return save(sessione, muta(await statoCorrente(sessione, adesso)));
 }

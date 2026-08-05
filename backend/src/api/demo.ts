@@ -17,6 +17,7 @@ import { PROFILI, creaProfilo, type NomeProfilo } from '../data/seed/profili.js'
 import { save } from '../data/store.js';
 import { richiestaNonValida } from './errori.js';
 import { aggiorna } from './servizio.js';
+import { sid } from './sessione.js';
 import { componiStato } from './vista.js';
 import type { DatiPersistiti } from '../domain/types.js';
 
@@ -43,7 +44,7 @@ rotteDemo.post(
   rotta(async (req) => {
     const completa = (req.body as { completa?: unknown } | undefined)?.completa !== false;
     return componiStato(
-      await aggiorna((dati) => {
+      await aggiorna(sid(req), (dati) => {
         const pieno = completa ? riempiChecklist(dati) : dati;
         // Closing is the engine's job; the rollover in servizio.ts then opens
         // tomorrow. Advancing a day means moving the day the state calls today.
@@ -63,14 +64,14 @@ rotteDemo.post(
         `Profilo "${nome}" inesistente. Disponibili: ${Object.keys(PROFILI).join(', ')}.`,
       );
     }
-    return componiStato(await save(creaProfilo(nome)));
+    return componiStato(await save(sid(req), creaProfilo(nome)));
   }),
 );
 
 /** POST /api/demo/reset — back to the first-access state. */
 rotteDemo.post(
   '/reset',
-  rotta(async () => componiStato(await save(creaProfilo('nuovo')))),
+  rotta(async (req) => componiStato(await save(sid(req), creaProfilo('nuovo')))),
 );
 
 /**
@@ -100,7 +101,7 @@ rotteDemo.post(
     }
 
     return componiStato(
-      await aggiorna((dati) => {
+      await aggiorna(sid(req), (dati) => {
         const stato = { ...dati.stato };
         if (s !== undefined) {
           stato.streakGiorni = Math.floor(s);

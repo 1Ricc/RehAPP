@@ -14,7 +14,8 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import { rotteDemo } from './api/demo.js';
 import { ErroreApi } from './api/errori.js';
 import { rotte } from './api/rotte.js';
-import { load, percorsoStato } from './data/store.js';
+import { sessione } from './api/sessione.js';
+import { apri, percorsoStato } from './data/store.js';
 import type { RispostaErrore } from './domain/types.js';
 
 const PORTA = Number(process.env['PORT'] ?? 3001);
@@ -25,6 +26,8 @@ const app = express();
 // Open CORS: the demo is a phone on the same wifi hitting the laptop's IP.
 app.use(cors());
 app.use(express.json());
+// Before the routers: every one of them needs to know whose save file this is.
+app.use(sessione);
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
@@ -96,9 +99,10 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json(errore);
 });
 
-// Seed the state file before accepting traffic, so the first request is not the
-// one that pays for it.
-await load();
+// Open the database before accepting traffic. There is no global state left to
+// seed — each session seeds its own on first sight — but the schema upgrade and
+// the file permissions are worth finding out about at boot, not mid-request.
+apri();
 
 app.listen(PORTA, HOST, () => {
   console.log(`Rehub backend su http://localhost:${PORTA}`);

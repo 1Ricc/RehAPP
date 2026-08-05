@@ -15,10 +15,42 @@ import type {
 
 const BASE = '/api';
 
+const CHIAVE_SESSIONE = 'rehub-session';
+
+/**
+ * Which save file on the server is ours.
+ *
+ * Generated once per browser and kept in `localStorage`, so a reload lands back
+ * on the same demo and two phones on the same public URL never share one. Not a
+ * credential — the server treats it as a key, not a login.
+ *
+ * `localStorage` throws in private-browsing modes and inside some in-app
+ * browsers, and an exception here would take down every request in the app, so
+ * the fallback keeps the id in memory for the life of the tab instead.
+ */
+let sessioneInMemoria: string | null = null;
+
+function sessionId(): string {
+  try {
+    const salvato = localStorage.getItem(CHIAVE_SESSIONE);
+    if (salvato) return salvato;
+    const nuovo = crypto.randomUUID();
+    localStorage.setItem(CHIAVE_SESSIONE, nuovo);
+    return nuovo;
+  } catch {
+    sessioneInMemoria ??= crypto.randomUUID();
+    return sessioneInMemoria;
+  }
+}
+
 async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
-    headers: { 'Content-Type': 'application/json' },
     ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Rehub-Session': sessionId(),
+      ...(init?.headers ?? {}),
+    },
   });
   const data = await res.json();
   if (!res.ok) throw new Error((data as RispostaErrore).messaggio ?? 'Errore sconosciuto');

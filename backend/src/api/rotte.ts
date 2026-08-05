@@ -20,6 +20,7 @@ import { save } from '../data/store.js';
 import type { Diario, EsercizioPianoCreato, FarmacoPianoCreato, IdBlocco, PianoCreato, Voucher } from '../domain/types.js';
 import { nonPossibile, richiestaNonValida } from './errori.js';
 import { aggiorna, statoCorrente } from './servizio.js';
+import { sid } from './sessione.js';
 import {
   componiBadge,
   componiNegozio,
@@ -49,16 +50,20 @@ function rotta(gestore: (req: Request) => Promise<unknown>) {
 
 rotte.get(
   '/state',
-  rotta(async () => componiStato(await statoCorrente())),
+  rotta(async (req) => componiStato(await statoCorrente(sid(req)))),
 );
 
 /**
  * POST /api/login — `{ username, password }`.
  *
  * Checked against the hardcoded demo credentials (see `data/seed/credenziali`).
- * Every login re-seeds the shared state from that account's fixed starting
- * point, so the result is always the same regardless of which account logged
- * in before it.
+ * Every login re-seeds **this session's** state from that account's fixed
+ * starting point, so the demo always opens on the same numbers no matter what
+ * was clicked before it.
+ *
+ * It used to re-seed the one global row, which meant the second person to log
+ * in wiped the first one's progress — invisible on a laptop, fatal on a URL
+ * two people have open at once.
  */
 rotte.post(
   '/login',
@@ -71,7 +76,7 @@ rotte.post(
     if (!credenziale || credenziale.password !== password) {
       throw richiestaNonValida('Credenziali non valide.');
     }
-    return componiStato(await save(credenziale.carica()));
+    return componiStato(await save(sid(req), credenziale.carica()));
   }),
 );
 
@@ -100,7 +105,7 @@ rotte.post(
     const acceso = fatto !== false;
 
     return componiStato(
-      await aggiorna((dati) => {
+      await aggiorna(sid(req), (dati) => {
         if (dati.giornoCorrente.finalizzato) {
           throw nonPossibile('La giornata è già stata chiusa: la checklist di oggi non si tocca più.');
         }
@@ -145,7 +150,7 @@ rotte.post(
     }
 
     return componiStato(
-      await aggiorna((dati) => {
+      await aggiorna(sid(req), (dati) => {
         if (dati.giornoCorrente.finalizzato) {
           throw nonPossibile('La giornata è già stata chiusa: il diario di oggi non si tocca più.');
         }
@@ -177,7 +182,7 @@ rotte.post(
     }
 
     return componiStato(
-      await aggiorna((dati) => {
+      await aggiorna(sid(req), (dati) => {
         if (dati.giornoCorrente.finalizzato) {
           throw nonPossibile('La giornata è già stata chiusa.');
         }
@@ -211,9 +216,9 @@ rotte.post(
  */
 rotte.post(
   '/day/close',
-  rotta(async () =>
+  rotta(async (req) =>
     componiStato(
-      await aggiorna((dati) => {
+      await aggiorna(sid(req), (dati) => {
         const fase = faseCorrente(dati);
         const classe = classificaGiorno(dati.piano, fase, dati.stato, dati.giornoCorrente);
         if (!classe.checklistCompleta) {
@@ -236,9 +241,9 @@ rotte.post(
  */
 rotte.post(
   '/phase/advance',
-  rotta(async () =>
+  rotta(async (req) =>
     componiStato(
-      await aggiorna((dati) => {
+      await aggiorna(sid(req), (dati) => {
         if (!dati.stato.avanzamentoDisponibile) {
           const mancanti = dati.stato.sogliaFaseAttuale - dati.stato.rpProgressoFase;
           throw nonPossibile(`Mancano ancora ${mancanti} RP alla fine di questa fase.`);
@@ -262,7 +267,7 @@ rotte.get(
     if (!Number.isInteger(giorni) || giorni < 1 || giorni > 400) {
       throw richiestaNonValida('Il parametro "giorni" deve essere un intero fra 1 e 400.');
     }
-    return componiStorico(await statoCorrente(), giorni);
+    return componiStorico(await statoCorrente(sid(req)), giorni);
   }),
 );
 
@@ -273,19 +278,19 @@ rotte.get(
 /** GET /api/badges — derived from the state on every call, never stored. */
 rotte.get(
   '/badges',
-  rotta(async () => componiBadge(await statoCorrente())),
+  rotta(async (req) => componiBadge(await statoCorrente(sid(req)))),
 );
 
 /** GET /api/store — catalogue with `sbloccato` and `acquistabile` already decided. */
 rotte.get(
   '/store',
-  rotta(async () => componiNegozio(await statoCorrente())),
+  rotta(async (req) => componiNegozio(await statoCorrente(sid(req)))),
 );
 
 /** GET /api/vouchers — what has been redeemed, newest first. */
 rotte.get(
   '/vouchers',
-  rotta(async () => componiVoucher(await statoCorrente())),
+  rotta(async (req) => componiVoucher(await statoCorrente(sid(req)))),
 );
 
 /**
@@ -299,7 +304,7 @@ rotte.post(
   rotta(async (req) => {
     const id = req.params['id'] ?? '';
     let emesso: Voucher | undefined;
-    const dati = await aggiorna((corrente) => {
+    const dati = await aggiorna(sid(req), (corrente) => {
       try {
         const dopo = riscatta(corrente, id);
         emesso = dopo.voucher[dopo.voucher.length - 1];
@@ -322,7 +327,7 @@ rotte.get(
   '/plans/:shareId',
   rotta(async (req) => {
     const shareId = (req.params['shareId'] ?? '').trim();
-    const dati = await statoCorrente();
+    const dati = await statoCorrente(sid(req));
     const piano = (dati.pianiCreati ?? []).find((p) => p.shareId === shareId);
     if (!piano) throw richiestaNonValida(`No plan found with code "${shareId}".`);
     return piano;
@@ -332,8 +337,8 @@ rotte.get(
 /** GET /api/plans — all plans the user has built, newest first. */
 rotte.get(
   '/plans',
-  rotta(async () => {
-    const dati = await statoCorrente();
+  rotta(async (req) => {
+    const dati = await statoCorrente(sid(req));
     return { piani: dati.pianiCreati ?? [] };
   }),
 );
@@ -376,7 +381,7 @@ rotte.post(
       farmaci: Array.isArray(body.farmaci) ? (body.farmaci as FarmacoPianoCreato[]) : [],
     };
 
-    await aggiorna((dati) => ({
+    await aggiorna(sid(req), (dati) => ({
       ...dati,
       pianiCreati: [piano, ...(dati.pianiCreati ?? [])],
     }));
@@ -393,8 +398,8 @@ rotte.post(
  */
 rotte.get(
   '/notifications',
-  rotta(async () => {
-    const dati = await statoCorrente();
+  rotta(async (req) => {
+    const dati = await statoCorrente(sid(req));
     return {
       coda: notifiche(dati),
       silenzio: silenzio(dati, new Date()),

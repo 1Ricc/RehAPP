@@ -14,6 +14,14 @@
 
 const BASE = process.env['REHUB_URL'] ?? 'http://localhost:3001';
 
+/**
+ * A save file of its own, so a run against the deployed URL cannot trample a
+ * demo somebody has open. Fresh on every run — the walkthrough starts by
+ * resetting anyway, and a new id is the cheapest way to guarantee it starts
+ * from nothing. Override with REHUB_SESSION to inspect what a run left behind.
+ */
+const SESSIONE = process.env['REHUB_SESSION'] ?? `giro-${crypto.randomUUID()}`;
+
 let passati = 0;
 const falliti: string[] = [];
 
@@ -34,9 +42,11 @@ async function chiama(
 ): Promise<{ stato: number; dati: any }> {
   const risposta = await fetch(`${BASE}${percorso}`, {
     method: metodo,
-    ...(corpo === undefined
-      ? {}
-      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }),
+    headers: {
+      'X-Rehub-Session': SESSIONE,
+      ...(corpo === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    ...(corpo === undefined ? {} : { body: JSON.stringify(corpo) }),
   });
   return { stato: risposta.status, dati: await risposta.json() };
 }
