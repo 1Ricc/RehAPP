@@ -111,9 +111,18 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 // Open the database before accepting traffic. There is no global state left to
 // seed — each session seeds its own on first sight — but the schema upgrade and
 // the file permissions are worth finding out about at boot, not mid-request.
-await apri();
-// Accounts only exist where there is a database to keep them in.
-if (accountDisponibili()) await preparaTabelle();
+//
+// Deliberately fatal. A configured database that cannot be opened is a broken
+// deployment, and serving requests anyway would mean every one of them failing
+// somewhere less legible than this.
+try {
+  await apri();
+  // Accounts only exist where there is a database to keep them in.
+  if (accountDisponibili()) await preparaTabelle();
+} catch (errore) {
+  console.error(diagnosiAvvio(errore));
+  process.exit(1);
+}
 
 // Hoisted: the listen callback is not async, and the description costs a round
 // trip to whichever backend answered.
@@ -131,6 +140,61 @@ app.listen(PORTA, HOST, () => {
       : '  frontend:       non compilato — solo API (in sviluppo usa Vite su 5173)',
   );
 });
+
+/**
+ * Why the database would not open, in words.
+ *
+ * The raw `pg` failure is a stack trace and a five-character SQLSTATE, which
+ * says nothing about the one thing that is actually wrong: the value of an
+ * environment variable on a host somebody configured by hand. This says which
+ * host was dialled, as which user, and what to go and look at.
+ *
+ * **Never prints the password**, which is why the URL is taken apart rather
+ * than logged.
+ */
+function diagnosiAvvio(errore: unknown): string {
+  const url = process.env['DATABASE_URL'];
+  if (!url) {
+    return `\n[avvio] Impossibile aprire il database locale.\n\n${String(errore)}\n`;
+  }
+
+  let dove = '(DATABASE_URL non è un URL valido)';
+  try {
+    const u = new URL(url);
+    dove = `  host:     ${u.hostname}\n  utente:   ${decodeURIComponent(u.username)}\n  database: ${u.pathname.replace(/^\//, '')}`;
+  } catch {
+    /* keep the placeholder: a malformed URL is itself the answer */
+  }
+
+  const codice = (errore as { code?: string }).code ?? '';
+  const causa: Record<string, string> = {
+    '28P01':
+      'La password è stata rifiutata.\n\n' +
+      'Ricontrolla il valore di DATABASE_URL sull’host: deve essere la stringa\n' +
+      'intera, senza apici e senza "export" davanti. Attenzione: il ruolo\n' +
+      'predefinito di Neon si chiama `neondb_owner` in ogni progetto, quindi una\n' +
+      'stringa copiata da un altro progetto fallisce esattamente così.',
+    '28000': 'Autorizzazione rifiutata: utente o regole di accesso non validi.',
+    '3D000': 'Il database indicato in fondo all’URL non esiste.',
+    ENOTFOUND: 'Host irraggiungibile: il nome non si risolve. Un refuso nell’hostname?',
+    EAI_AGAIN: 'Host irraggiungibile: DNS non risponde.',
+    ECONNREFUSED: 'Connessione rifiutata: nessuno in ascolto su quella porta.',
+    ETIMEDOUT:
+      'Timeout in connessione. Su Neon questo è il sintomo classico della stringa\n' +
+      'diretta al posto di quella *pooled* (hostname con "-pooler").',
+  };
+
+  return [
+    '',
+    '[avvio] DATABASE_URL è impostata ma il database non si apre.',
+    '',
+    dove,
+    `  codice:   ${codice || '(assente)'}`,
+    '',
+    causa[codice] ?? String((errore as Error).message ?? errore),
+    '',
+  ].join('\n');
+}
 
 /** The IP to point the phone at (TODO-backend.md §10). */
 function indirizziLan(): string[] {
