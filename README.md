@@ -258,14 +258,55 @@ phone is the phone).
 | Command | Location | Does |
 |---|---|---|
 | `npm run dev` | both | dev server with reload |
-| `npm test` | backend | 53 scoring-engine tests |
+| `npm test` | backend | engine, store, password and plan-conversion tests |
 | `npm run typecheck` | both | type check without emitting |
 | `npm run demo:check` | backend | runs the full demo path and reports failures |
 | `npm run build` | frontend | production bundle |
 
+### Accounts
+
+Set `DATABASE_URL` to a Postgres connection string and the app grows accounts:
+register with a username and password, log back in from any device, and start
+with no plan until you adopt one you built or received by share code. Without
+`DATABASE_URL` the app is exactly what it was — anonymous save files and the
+demo login — and `/api/register` answers 503.
+
+```bash
+# any Postgres will do; a throwaway container is enough for local work
+docker run -d --name rehub-pg -e POSTGRES_PASSWORD=rehub -e POSTGRES_USER=rehub \
+  -e POSTGRES_DB=rehub -p 55432:5432 postgres:16-alpine
+export DATABASE_URL='postgresql://rehub:rehub@localhost:55432/rehub'
+cd backend && npm run dev
+```
+
+What this is and is not:
+
+- Passwords are hashed with `scrypt` from `node:crypto`, salted per password,
+  compared in constant time. Plaintext is never stored and never logged.
+- The session header carries a **bearer token**, not a signed one: it is a
+  random string the server looks up, revoked on logout. Anyone holding it is
+  that account, so it must never end up in a log or a URL.
+- There is **no password reset**. Forgetting a password means the account is
+  gone.
+- Adopting a plan **restarts progress** at phase 1 day 1. Gems and vouchers are
+  kept — they were earned.
+- Per-exercise frequency is **ignored** when a plan is adopted: every exercise
+  lands on every working day. A phase threshold is its working days times the
+  daily RP, which only holds if every working day is worth the same.
+- The demo login (`demo` / `rehub123`) keeps working either way: the account
+  routes decline a request they cannot serve and it takes over.
+
+To deploy with accounts, set `DATABASE_URL` on the host (Render: Environment →
+Add) to the **pooled** connection string of a managed Postgres, and redeploy.
+It is a secret and is never committed or given a default in the `Dockerfile`.
+The tables are created at boot, so there is no migration step. Managed Postgres
+usually terminates TLS at a proxy whose chain Node does not ship, so
+certificate verification is relaxed for non-local connections.
+
 ### Resetting state
 
-State is a single SQLite file. Delete it and it regenerates on next boot:
+Without `DATABASE_URL`, state is a single SQLite file. Delete it and it
+regenerates on next boot:
 
 ```bash
 rm backend/data/state.db
@@ -286,6 +327,9 @@ Every mutating call returns the full state. Every error is a readable
 
 | Method | Path | Description |
 |---|---|---|
+| POST | `/api/register` | Create an account; returns `{ token, utente, stato }` |
+| POST | `/api/login` | Log in to an account, or to the demo; account replies carry a `token` |
+| POST | `/api/logout` | Revoke the token in the session header |
 | GET | `/api/state` | Full home state |
 | POST | `/api/tasks/toggle` | Tick/untick one exercise or medication dose |
 | POST | `/api/diary` | Submit VAS score + optional note |
@@ -299,5 +343,6 @@ Every mutating call returns the full state. Every error is a readable
 | GET | `/api/plans` | User-created plans, newest first |
 | POST | `/api/plans` | Save a plan; `shareId` generated server-side |
 | GET | `/api/plans/:shareId` | Look up a plan by 6-character share code |
+| POST | `/api/plans/:shareId/adopt` | Make an authored plan the one being scored |
 | GET | `/api/notifications` | Notification queue + silence reason |
 | GET | `/api/health` | `{ ok: true }` |

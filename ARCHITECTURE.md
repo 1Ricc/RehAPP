@@ -1,6 +1,9 @@
 # Rehub Architecture
 
-Hackathon rehab-companion app. Single physiotherapy patient, one hardcoded user, no auth by design (24-hour build).
+Hackathon rehab-companion app. Built in 24 hours around one physiotherapy
+patient and a hardcoded demo login; it now also carries real accounts —
+username, scrypt-hashed password, one save file each — whenever a `DATABASE_URL`
+is configured.
 
 ---
 
@@ -16,7 +19,7 @@ Rehub/
 │   │   ├── api/           HTTP layer (routes, view models, errors)
 │   │   ├── data/          persistence + seed data
 │   │   └── domain/        pure business logic + shared types
-│   └── tests/             scoring unit tests
+│   └── tests/             engine, store, password and plan-conversion tests
 └── frontend/              React + Vite + TypeScript SPA (port 5173)
     └── src/
         ├── api.ts          typed fetch wrapper
@@ -32,7 +35,9 @@ Rehub/
 ### Stack
 - **Node.js** with `"type": "module"` (ES modules throughout)
 - **Express 4** — routes, JSON body parsing, CORS open (demo phones on LAN)
-- **better-sqlite3** — synchronous SQLite, single file `backend/data/state.db`
+- **better-sqlite3** — synchronous SQLite, single file `backend/data/state.db`, used
+  for local work and the test suite
+- **pg** — Postgres, used instead whenever `DATABASE_URL` is set (the deployment)
 - **TypeScript** with `tsc` compilation
 
 ### Layer Diagram
@@ -50,10 +55,13 @@ HTTP Request
  domain/           (pure functions: scoring, negozio, benefit, notifiche)
      │
      ▼
- store.ts          (SQLite read/write)
+ store.ts          (facade over the Deposito interface)
      │
      ▼
- state.db
+ deposito.ts       (picks a backend: Postgres if DATABASE_URL, else SQLite)
+     │
+     ├──▶ deposito-sqlite.ts   ──▶  state.db
+     └──▶ deposito-postgres.ts ──▶  Postgres
 ```
 
 ### Files
@@ -66,8 +74,16 @@ HTTP Request
 | `src/api/vista.ts` | Assembles API response shapes (`componiStato`, `componiStorico`, etc.) |
 | `src/api/errori.ts` | `ErroreApi`, `richiestaNonValida()`, `nonPossibile()` |
 | `src/api/demo.ts` | `/api/demo/*` routes for advancing demo state (not for prod) |
-| `src/data/store.ts` | SQLite persistence: `load()`, `save()`, `reset()` |
-| `src/data/fixture.ts` | `datiIniziali()` — the fresh-start state (day 8, half done) |
+| `src/api/auth.ts` | `/api/register`, `/api/login`, `/api/logout` |
+| `src/api/sessione.ts` | Resolves the `X-Rehub-Session` header: guest id or login token |
+| `src/data/store.ts` | Persistence facade: `load()`, `save()`, `reset()`, `apri()` |
+| `src/data/deposito.ts` | The `Deposito` interface and the backend choice |
+| `src/data/deposito-sqlite.ts` | SQLite implementation |
+| `src/data/deposito-postgres.ts` | Postgres implementation, plus `pool()` |
+| `src/data/utenti.ts` | Accounts and bearer tokens (`utenti`, `sessioni` tables) |
+| `src/data/fixture.ts` | `datiIniziali()` (the demo, day 8 half done), `datiSenzaPiano()` (a new account), `datiPerSessione()` (which of the two) |
+| `src/domain/password.ts` | scrypt hashing: `hashPassword()`, `verificaPassword()` |
+| `src/domain/conversione-piano.ts` | `PianoCreato` → a scored `Piano` |
 | `src/data/catalogo.ts` | Store rewards catalogue |
 | `src/data/seed/piano-marco.ts` | The hardcoded rehab plan (4 phases, knee ACL) |
 | `src/data/seed/profili.ts` | Demo profiles for `GET /api/demo/*` |
@@ -79,21 +95,65 @@ HTTP Request
 | `src/domain/notifiche.ts` | Notification queue and silence rules |
 | `src/domain/tempo.ts` | Date helpers (`giornataLogica`, `aggiungiGiorni`) |
 
-### Persistence — SQLite
+### Persistence — two backends, one interface
+
+`store.ts` is a facade. `deposito.ts` picks the implementation at first use:
+Postgres when `DATABASE_URL` is set, SQLite otherwise. Both answer the same six
+functions, so nothing above them knows which one replied.
+
+**One row per save file**, keyed by session id — never one global row. Two
+people on one public URL would otherwise overwrite each other.
 
 ```sql
+-- SQLite (backend/data/state.db)
 CREATE TABLE stato (
-  id       INTEGER PRIMARY KEY CHECK (id = 1),  -- enforces single row
+  id       TEXT    PRIMARY KEY,   -- session id, or `u-<uuid>` for an account
   versione INTEGER NOT NULL,
-  dati     TEXT    NOT NULL                      -- JSON blob of DatiPersistiti
-)
+  dati     TEXT    NOT NULL,      -- JSON blob of DatiPersistiti
+  visto_il INTEGER NOT NULL
+);
+
+-- Postgres, same shape; `dati` is JSONB so a state is readable from a console
+CREATE TABLE stato (
+  id       TEXT PRIMARY KEY,
+  versione INTEGER NOT NULL,
+  dati     JSONB   NOT NULL,
+  visto_il TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 ```
 
-- **WAL mode + NORMAL synchronous**: safe through OS crashes, no demo-day risk
-- **In-memory cache**: `cache` variable in `store.ts` — only one disk read per process lifetime
-- **Atomic writes**: SQLite upsert transaction
+- **In-memory cache** per process, keyed by id; `svuotaCache()` is the test seam
 - **Version check**: if `versione !== VERSIONE_STATO` the row is wiped and re-seeded
-- **JSON migration**: on first boot, if `state.json` exists (old file-based store) it is migrated in and renamed to `state.json.migrated.bak`
+- **Pruning**: guest rows are dropped after 48h and capped at 500, oldest first.
+  Account rows (`u-%`) are never pruned — that is somebody's progress, not a demo
+
+### Accounts (Postgres only)
+
+```sql
+CREATE TABLE utenti (
+  id            TEXT PRIMARY KEY,          -- `u-<uuid>`, also the state row's id
+  username      TEXT UNIQUE NOT NULL,      -- stored lowercase
+  password_hash TEXT NOT NULL,             -- scrypt, `salt:hash` hex
+  nome          TEXT NOT NULL,
+  eta           INTEGER,
+  obiettivo     TEXT NOT NULL DEFAULT '',
+  creato_il     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE sessioni (
+  token     TEXT PRIMARY KEY,              -- `t-<48 hex>`, opaque bearer token
+  utente_id TEXT NOT NULL REFERENCES utenti(id) ON DELETE CASCADE,
+  creato_il TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+State is keyed by **user id**, not by token: logging out throws the token away
+and leaves the progress where it is. `sessione.ts` tells the two apart by the
+`t-` prefix and resolves a token to its user on every request; an expired or
+forged one falls back to a guest save file rather than a 401.
+
+Without `DATABASE_URL` none of this exists: `registra()` throws and the route
+answers 503, which leaves the anonymous demo exactly as it was.
 
 ### API Contract — Core Invariant
 
@@ -103,6 +163,9 @@ CREATE TABLE stato (
 
 | Method | Path | Description |
 |---|---|---|
+| POST | `/api/register` | Create an account; returns `{ token, utente, stato }` |
+| POST | `/api/login` | Log in to an account, or fall through to the demo login |
+| POST | `/api/logout` | Revoke the token in the session header |
 | GET | `/api/state` | Full home state |
 | POST | `/api/tasks/toggle` | Tick/untick one exercise or medication dose |
 | POST | `/api/diary` | Submit VAS pain score + optional note |
@@ -116,6 +179,7 @@ CREATE TABLE stato (
 | GET | `/api/plans` | User-created plans, newest first |
 | POST | `/api/plans` | Save a new plan; generates `shareId` server-side |
 | GET | `/api/plans/:shareId` | Look up a plan by 6-char share code |
+| POST | `/api/plans/:shareId/adopt` | Convert an authored plan and start being scored on it |
 | GET | `/api/notifications` | Push notification queue + silence reason |
 | GET | `/api/health` | `{ ok: true }` |
 
@@ -188,15 +252,23 @@ Rule 2 above rule 3 is intentional: finishing with pain is rewarded, not penalis
 
 ### Routing
 
-`App.tsx` holds a single `useState<View>` where `View = 'login' | 'main' | 'workout' | 'profile' | 'shop' | 'create'`. No router library. `content()` is a switch that returns the active view JSX.
+`App.tsx` holds a single `useState<View>` where `View = 'login' | 'register' | 'choose-plan' | 'main' | 'workout' | 'profile' | 'shop' | 'create'`. No router library. `content()` is a switch that returns the active view JSX.
 
-BottomNav is hidden on `'login'` and `'create'` (focused flows). On all other views it is rendered.
+Every state the app receives goes through `updateStato`, which sends a
+`senzaPiano` state to `'choose-plan'` and nowhere else — the builder excepted,
+since being bounced out of it mid-form would make a plan impossible to finish.
+
+BottomNav is hidden on `'login'`, `'register'`, `'create'` and `'choose-plan'`
+(focused flows), and while `senzaPiano` is true: Workout and Shop have nothing
+to show without a plan.
 
 ### Views
 
 | File | Route | Fetches |
 |---|---|---|
-| `LoginView.tsx` | `login` | `GET /api/state` on login click (no real OAuth) |
+| `LoginView.tsx` | `login` | `POST /api/login` — an account token, or the demo's bare state |
+| `RegisterView.tsx` | `register` | `POST /api/register`; stores the token and lands on choose-plan |
+| `ChoosePlanView.tsx` | `choose-plan` | `GET /api/plans` on mount; `POST /api/plans/:shareId/adopt` |
 | `HomeView.tsx` | `main` | Uses `stato` prop from App |
 | `WorkoutView.tsx` | `workout` | Uses `stato` prop; mutations call toggle/diary/recovery |
 | `ProfileView.tsx` | `profile` | `GET /api/history`, `/badges`, `/vouchers`, `/plans` on mount |

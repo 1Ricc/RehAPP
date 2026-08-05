@@ -5,8 +5,12 @@
  * opposite: the whole point is what SQLite does across sessions and restarts,
  * so they run against a real database in a temp directory.
  *
- * `REHUB_DATA_DIR` has to be set before the store module is imported — it reads
- * the path once, at module load — which is why every import here is dynamic.
+ * They import the SQLite backend directly rather than the `store.ts` facade,
+ * because the facade picks its backend from DATABASE_URL — and every assertion
+ * below is about a file on disk, a WAL, and rows pruned by `visto_il`.
+ *
+ * `REHUB_DATA_DIR` has to be set before the module is imported — it reads the
+ * path once, at module load — which is why every import here is dynamic.
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -26,7 +30,7 @@ async function storeIsolato() {
   cartelle.push(dir);
   process.env['REHUB_DATA_DIR'] = dir;
   vi.resetModules();
-  const store = await import('../src/data/store.js');
+  const store = await import('../src/data/deposito-sqlite.js');
   return { store, dir };
 }
 
@@ -76,7 +80,7 @@ describe('una riga per sessione', () => {
     const a = await store.load('sessione-a');
     await store.save('sessione-a', { ...a, stato: { ...a.stato, gemmePortafoglio: 1234 } });
 
-    await store.svuotaCache();
+    store.svuotaCache();
 
     expect((await store.load('sessione-a')).stato.gemmePortafoglio).toBe(1234);
   });
@@ -114,7 +118,7 @@ describe('migrazione dalla vecchia tabella a riga singola', () => {
 
     process.env['REHUB_DATA_DIR'] = dir;
     vi.resetModules();
-    const store = await import('../src/data/store.js');
+    const store = await import('../src/data/deposito-sqlite.js');
 
     const dati = await store.load('una-sessione-qualunque');
     expect(dati.stato.streakGiorni).toBe(7);
@@ -139,7 +143,7 @@ describe('la tabella non cresce senza limite', () => {
     db.prepare('UPDATE stato SET visto_il = ? WHERE id = ?').run(treGiorniFa, 'vecchia');
     db.close();
 
-    await store.svuotaCache();
+    store.svuotaCache();
     await store.load('nuova-arrivata');
 
     const controllo = new Database(join(dir, 'state.db'));
@@ -175,7 +179,7 @@ describe('il blob resta quello che il dominio si aspetta', () => {
       ],
     };
     await store.save('sessione-a', modificato);
-    await store.svuotaCache();
+    store.svuotaCache();
 
     const riletto = await store.load('sessione-a');
     expect(riletto.voucher).toHaveLength(1);
